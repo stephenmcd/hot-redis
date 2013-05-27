@@ -64,12 +64,12 @@ class List(Base):
         self.extend(l)
         return self
 
-    def __imul__(self, i):
-        self.extend(self[:] * (i - 1))
-        return self
-
     def __mul__(self, i):
         return List(self[:] * i)
+
+    def __imul__(self, i):
+        self.list_multiply(i)
+        return self
 
     def __contains__(self, value):
         return value in self[:]
@@ -82,11 +82,9 @@ class List(Base):
 
     def __getitem__(self, i):
         if isinstance(i, slice):
-            if i.start is None:
-                i.start = 0
-            if i.stop is None:
-                i.stop = -1
-            return self.lrange(i.start, i.stop)
+            start = i.start if i.start is not None else 0
+            stop = i.stop if i.stop is not None else -1
+            return self.lrange(start, stop)
         item = self.lindex(i)
         if item is None:
             raise IndexError
