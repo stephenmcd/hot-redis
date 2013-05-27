@@ -39,13 +39,13 @@ class Base(object):
         except AttributeError:
             pass
         else:
-            return lambda *args: func(self.key, *args)
+            return lambda *a, **k: func(self.key, *a, **k)
         try:
             func = lua_funcs[name]
         except KeyError:
             pass
         else:
-            return lambda *args: func(keys=[self.key], args=args)
+            return lambda *a, **k: func(keys=[self.key], args=a, **k)
         raise AttributeError
 
     def __getattr__(self, name):
@@ -135,7 +135,4 @@ class List(Base):
         return self[:].count(value)
 
     def sort(self, reverse=False):
-        args = []
-        if reverse:
-            args.append("DESC")
-        self.proxy("sort")(*args)
+        self.proxy("sort")(desc=reverse, store=self.key)
