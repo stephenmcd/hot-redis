@@ -2,6 +2,7 @@
 from contextlib import contextmanager
 from uuid import uuid4
 from redis import Redis
+from redis.exceptions import ResponseError
 
 
 redis = Redis()
@@ -52,7 +53,8 @@ class List(Base):
 
     def __init__(self, value=None, key=None):
         super(List, self).__init__(value, key)
-        self.extend(value or [])
+        if value:
+            self.extend(value)
 
     def __iter__(self):
         return iter(self[:])
@@ -91,7 +93,10 @@ class List(Base):
         return item
 
     def __setitem__(self, i, value):
-        self.lset(i, value)
+        try:
+            self.lset(i, value)
+        except ResponseError:
+            raise IndexError
 
     def extend(self, l):
         self.rpush(*l)
