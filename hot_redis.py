@@ -73,9 +73,6 @@ class List(Base):
         self.list_multiply(i)
         return self
 
-    def __contains__(self, value):
-        return value in self[:]
-
     def __repr__(self):
         return "%s" % self[:]
 
