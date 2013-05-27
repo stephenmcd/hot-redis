@@ -53,6 +53,13 @@ class List(Base):
 
     def __init__(self, value=None, key=None):
         super(List, self).__init__(value, key)
+        try:
+            iter(value)
+        except TypeError:
+            value = None
+        else:
+            if not isinstance(value, list):
+                value = list(value)
         if value:
             self.extend(value)
 
