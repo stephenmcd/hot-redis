@@ -59,6 +59,7 @@ class List(Base):
 
     def __init__(self, value=None, key=None):
         super(List, self).__init__(value, key)
+        self.type = None
         try:
             iter(value)
         except TypeError:
@@ -68,6 +69,23 @@ class List(Base):
                 value = list(value)
         if value:
             self.extend(value)
+
+    def proxy(self, name):
+        func = super(List, self).proxy(name)
+        def wrapper(*args, **kwargs):
+            value = func(*args, **kwargs)
+            if value is not None:
+                if isinstance(value, list):
+                    return map(self.type, value)
+                return self.type(value)
+        return wrapper
+
+    def check_type(self, value):
+        t = type(value)
+        if not self.type:
+            self.type = t
+        elif t != self.type:
+            raise TypeError("%s != %s" % (t, self.type))
 
     def __iter__(self):
         return iter(self[:])
@@ -103,6 +121,7 @@ class List(Base):
         return item
 
     def __setitem__(self, i, value):
+        self.check_type(value)
         try:
             self.lset(i, value)
         except ResponseError:
@@ -112,12 +131,14 @@ class List(Base):
         self.pop(i)
 
     def extend(self, l):
+        map(self.check_type, l)
         self.rpush(*l)
 
     def append(self, value):
         self.extend([value])
 
     def insert(self, i, value):
+        self.check_type(value)
         self.list_insert(i, value)
 
     def pop(self, i=-1):
