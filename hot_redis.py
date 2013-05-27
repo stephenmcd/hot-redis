@@ -33,7 +33,7 @@ class Base(object):
     def __init__(self, value=None, key=None):
         self.key = key or str(uuid4())
 
-    def __getattr__(self, name):
+    def proxy(self, name):
         try:
             func = getattr(client(), name)
         except AttributeError:
@@ -47,6 +47,9 @@ class Base(object):
         else:
             return lambda *args: func(keys=[self.key], args=args)
         raise AttributeError
+
+    def __getattr__(self, name):
+        return self.proxy(name)
 
 
 class List(Base):
@@ -130,3 +133,9 @@ class List(Base):
 
     def count(self, value):
         return self[:].count(value)
+
+    def sort(self, reverse=False):
+        args = []
+        if reverse:
+            args.append("DESC")
+        self.proxy("sort")(*args)
