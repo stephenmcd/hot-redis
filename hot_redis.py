@@ -95,6 +95,9 @@ class List(Base):
         except ResponseError:
             raise IndexError
 
+    def __delitem__(self, i):
+        self.pop(i)
+
     def extend(self, l):
         self.rpush(*l)
 
