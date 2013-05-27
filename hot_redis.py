@@ -126,8 +126,7 @@ class List(Base):
         self.list_reverse()
 
     def index(self, value):
-        self[:].index(value)
+        return self[:].index(value)
 
     def count(self, value):
-        self[:].count(value)
-
+        return self[:].count(value)
