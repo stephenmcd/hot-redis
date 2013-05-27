@@ -33,6 +33,9 @@ class Base(object):
     def __init__(self, value=None, key=None):
         self.key = key or str(uuid4())
 
+    def __del__(self):
+        self.delete()
+
     def proxy(self, name):
         try:
             func = getattr(client(), name)
