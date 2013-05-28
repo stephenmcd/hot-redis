@@ -284,7 +284,7 @@ class Dict(Base):
         return self.hget(name) or default
 
     def __getitem__(self, name):
-        value = self.hget(name)
+        value = self.get(name)
         if value is None:
             raise KeyError
 
