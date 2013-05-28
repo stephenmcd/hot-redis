@@ -54,6 +54,9 @@ class Base(object):
     def __getattr__(self, name):
         return self.proxy(name)
 
+    def __repr__(self):
+        return "%s" % getattr(self, "value", "")
+
 
 class List(Base):
 
@@ -87,25 +90,26 @@ class List(Base):
         elif t != self.type:
             raise TypeError("%s != %s" % (t, self.type))
 
+    @property
+    def value(self):
+        return self[:]
+
     def __iter__(self):
-        return iter(self[:])
+        return iter(self.value)
 
     def __add__(self, l):
-        return List(self[:] + l)
+        return List(self.value + l)
 
     def __iadd__(self, l):
         self.extend(l)
         return self
 
     def __mul__(self, i):
-        return List(self[:] * i)
+        return List(self.value * i)
 
     def __imul__(self, i):
         self.list_multiply(i)
         return self
-
-    def __repr__(self):
-        return "%s" % self[:]
 
     def __len__(self):
         return self.llen()
@@ -153,10 +157,94 @@ class List(Base):
         self.list_reverse()
 
     def index(self, value):
-        return self[:].index(value)
+        return self.value.index(value)
 
     def count(self, value):
-        return self[:].count(value)
+        return self.value.count(value)
 
     def sort(self, reverse=False):
         self.proxy("sort")(desc=reverse, store=self.key)
+
+
+class Set(Base):
+
+    def __init__(self, value=None, key=None):
+        super(Set, self).__init__(value, key)
+        self.type = None
+        try:
+            iter(value)
+            self.update(value)
+        except TypeError:
+            pass
+
+    @property
+    def value(self):
+        return self.smembers()
+
+    def add(self, value):
+        self.update([value])
+
+    def update(self, value):
+        self.sadd(*value)
+
+    def pop(self):
+        return self.spop()
+
+    def clear(self):
+        del self
+
+    def remove(self):
+        if self.srem(value) == 0:
+            raise KeyError
+
+    def discard(self, value):
+        self.srem(value)
+
+    def __len__(self, value):
+        return self.scard()
+
+    def __contains__(self, value):
+        return self.sismember(value)
+
+    def __and__(self, value):
+        raise NotImplemented
+    def __iand__(self, value):
+        raise NotImplemented
+    def __rand__(self, value):
+        raise NotImplemented
+    def intersection(self, value):
+        raise NotImplemented
+    def intersection_update(self, value):
+        raise NotImplemented
+
+    def __or__(self, value):
+        raise NotImplemented
+    def __ior__(self, value):
+        raise NotImplemented
+    def __ror__(self, value):
+        raise NotImplemented
+    def union(self, value):
+        raise NotImplemented
+
+    def __xor__(self, value):
+        raise NotImplemented
+    def symmetric_difference(self, value):
+        raise NotImplemented
+    def symmetric_difference_update(self, value):
+        raise NotImplemented
+
+    def __sub__(self, value):
+        raise NotImplemented
+    def __isub__(self, value):
+        raise NotImplemented
+    def __rsub__(self, value):
+        raise NotImplemented
+    def difference(self, value):
+        raise NotImplemented
+
+    def issubset(self, value):
+        raise NotImplemented
+    def issuperset(self, value):
+        raise NotImplemented
+    def isdisjoint(self, value):
+        raise NotImplemented
