@@ -254,7 +254,7 @@ class Dict(Base):
         super(Dict, self).__init__(value, key)
         if not isinstance(value, dict):
             try:
-                dict(**value)
+                value = dict(value)
             except TypeError:
                 value = None
         if value:
