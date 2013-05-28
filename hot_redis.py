@@ -1,5 +1,6 @@
 
 from contextlib import contextmanager
+from operator import iand, ior
 from uuid import uuid4
 from redis import Redis
 from redis.exceptions import ResponseError
@@ -58,11 +59,24 @@ class Base(object):
         return "%s" % getattr(self, "value", "")
 
 
-class List(Base):
+class Iterable(Base):
+
+    def __init__(self, value=None, key=None):
+        super(Iterable, self).__init__(value, key)
+        self.type = None
+
+    def check_type(self, value):
+        t = type(value)
+        if not self.type:
+            self.type = t
+        elif t != self.type:
+            raise TypeError("%s != %s" % (t, self.type))
+
+
+class List(Iterable):
 
     def __init__(self, value=None, key=None):
         super(List, self).__init__(value, key)
-        self.type = None
         if not isinstance(value, list):
             try:
                 list(value)
@@ -72,6 +86,7 @@ class List(Base):
             self.extend(value)
 
     def proxy(self, name):
+        # in iterable?
         func = super(List, self).proxy(name)
         def wrapper(*args, **kwargs):
             value = func(*args, **kwargs)
@@ -80,13 +95,6 @@ class List(Base):
                     return map(self.type, value)
                 return self.type(value)
         return wrapper
-
-    def check_type(self, value):
-        t = type(value)
-        if not self.type:
-            self.type = t
-        elif t != self.type:
-            raise TypeError("%s != %s" % (t, self.type))
 
     @property
     def value(self):
@@ -164,7 +172,7 @@ class List(Base):
         self.proxy("sort")(desc=reverse, store=self.key)
 
 
-class Set(Base):
+class Set(Iterable):
 
     def __init__(self, value=None, key=None):
         super(Set, self).__init__(value, key)
@@ -179,11 +187,18 @@ class Set(Base):
     def value(self):
         return self.smembers()
 
+    def all(self, values):
+        return all([isinstance(value, Set) for value in values])
+
+    def reduce(self, op, values):
+        values = [v.value if isinstance(v, Set) else v for v in values]
+        return reduce(op, values)
+
     def add(self, value):
         self.update([value])
 
-    def update(self, value):
-        self.sadd(*value)
+    def update(self, *values):
+        self.sadd(*self.reduce(ior, values))
 
     def pop(self):
         return self.spop()
@@ -204,16 +219,29 @@ class Set(Base):
     def __contains__(self, value):
         return self.sismember(value)
 
-    def __and__(self, value):
-        raise NotImplemented
-    def __iand__(self, value):
-        raise NotImplemented
+    def __and__(self, *values):
+        if self.all(values):
+            keys = [value.key for value in values]
+            return self.sinter(*keys)
+        else:
+            return self.reduce(iand, [self.value] + values)
+
+    def __iand__(self, *values):
+        if self.all(values):
+            keys = [value.key for value in values]
+            self.sinterstore(self.key, *keys)
+        else:
+            self.update(self.reduce(iand, values))
+        return self
+
     def __rand__(self, value):
-        raise NotImplemented
+        return value & self
+
     def intersection(self, value):
-        raise NotImplemented
+        return self & value
+
     def intersection_update(self, value):
-        raise NotImplemented
+        self &= value
 
     def __or__(self, value):
         raise NotImplemented
@@ -248,7 +276,7 @@ class Set(Base):
         raise NotImplemented
 
 
-class Dict(Base):
+class Dict(Iterable):
 
     def __init__(self, value=None, key=None):
         super(Dict, self).__init__(value, key)
