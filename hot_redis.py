@@ -63,13 +63,11 @@ class List(Base):
     def __init__(self, value=None, key=None):
         super(List, self).__init__(value, key)
         self.type = None
-        try:
-            iter(value)
-        except TypeError:
-            value = None
-        else:
-            if not isinstance(value, list):
-                value = list(value)
+        if not isinstance(value, list):
+            try:
+                list(value)
+            except TypeError:
+                value = None
         if value:
             self.extend(value)
 
@@ -248,3 +246,50 @@ class Set(Base):
         raise NotImplemented
     def isdisjoint(self, value):
         raise NotImplemented
+
+
+class Dict(Base):
+
+    def __init__(self, value=None, key=None):
+        super(Dict, self).__init__(value, key)
+        if not isinstance(value, dict):
+            try:
+                dict(**value)
+            except TypeError:
+                value = None
+        if value:
+            self.update(value)
+
+    @property
+    def value(self):
+        return self.hgetall()
+
+    def update(self, value):
+        self.hmset(value)
+
+    def keys(self):
+        return self.hkeys()
+
+    def values(self):
+        return self.values()
+
+    def items(self):
+        return self.value.items()
+
+    def setdefault(self, name, value=None):
+        if self.hsetnx(name, value) == 1:
+            return value
+
+    def get(self, name, default=None):
+        return self.hget(name) or default
+
+    def __getitem__(self, name):
+        value = self.hget(name)
+        if value is None:
+            raise KeyError
+
+    def __setitem__(self, name, value):
+        self.hset(name)
+
+    def __delitem__(self, name):
+        self.hdel(name)
