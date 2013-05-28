@@ -18,7 +18,7 @@ def pipeline():
     _pipeline = None
 
 lua_funcs = {}
-with open("functions.lua", "r") as f:
+with open("atoms.lua", "r") as f:
     for func in f.read().strip().split("function "):
         if not func:
             continue
