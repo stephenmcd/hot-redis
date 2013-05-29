@@ -70,27 +70,28 @@ class Iterable(Base):
         def wrapper(*args, **kwargs):
             value = func(*args, **kwargs)
             if value is not None:
-                # Convert return values to underlying
-                # type attribute. If the return value is
-                # iterable and its type matches the class
-                # type (eg list -> List, set -> Set),
-                # convert type for each item and ensure
-                # the iterable type is maintained.
-                if type(value).__name__ == type(self).__name__.lower():
-                    if self.type == str:
-                        return value
-                    typed = map(self.type, value)
-                    if type(typed) != type(value):
-                        # Everything other than lists.
-                        typed = type(value)(typed)
-                    return typed
-                return self.type(value)
+                return self._set_type(value)
         return wrapper
 
-    def check_type(self, value, many=False):
-        if many:
-            for v in value:
-                self.check_type(v)
+    def _is_many(self, value):
+        return type(value).__name__ == type(self).__name__.lower()
+
+    def set_type(self, value):
+        if self.type == str:
+            return value
+        elif self._is_many(value):
+            typed_value = map(self.set_type, value)
+            if type(typed_value) != type(value):
+                # Everything other than lists.
+                typed_value = type(value)(typed_value)
+            return typed_value
+        elif self.type:
+            return self.type(value)
+        return value
+
+    def check_type(self, value):
+        if self._is_many(value):
+            map(self.check_type, value)
         else:
             t = type(value)
             if not self.type:
@@ -156,7 +157,7 @@ class List(Iterable):
         self.pop(i)
 
     def extend(self, l):
-        self.check_type(l, many=True)
+        self.check_type(l)
         self.rpush(*l)
 
     def append(self, value):
@@ -208,7 +209,7 @@ class Set(Iterable):
     def _reduce(self, op, values):
         values = [v.value if isinstance(v, Set) else v for v in values]
         value = reduce(op, values)
-        self.check_type(value, many=True)
+        self.check_type(value)
         return value
 
     def add(self, value):
