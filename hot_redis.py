@@ -73,6 +73,11 @@ class Iterable(Base):
                 return self._set_type(value)
         return wrapper
 
+    def _to_value(self, value):
+        if type(value) == type(self):
+            return value.value
+        return value
+
     def _is_many(self, value):
         return type(value).__name__ == type(self).__name__.lower()
 
@@ -116,14 +121,17 @@ class List(Iterable):
     def value(self):
         return self[:]
 
+    def __eq__(self, l):
+        return self.value == self._to_value(l)
+
     def __iter__(self):
         return iter(self.value)
 
     def __add__(self, l):
-        return List(self.value + l)
+        return List(self.value + self._to_value(l))
 
     def __iadd__(self, l):
-        self.extend(l)
+        self.extend(self._to_value(l))
         return self
 
     def __mul__(self, i):
