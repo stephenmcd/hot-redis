@@ -50,13 +50,13 @@ class Base(object):
             pass
         else:
             return lambda *a, **k: func(keys=[self.key], args=a, **k)
-        raise AttributeError
+        raise AttributeError(name)
 
     def __getattr__(self, name):
         return self._proxy(name)
 
     def __repr__(self):
-        return "%s" % getattr(self, "value", "")
+        return "%s" % self.value
 
 
 class Iterable(Base):
@@ -70,7 +70,7 @@ class Iterable(Base):
         def wrapper(*args, **kwargs):
             value = func(*args, **kwargs)
             if value is not None:
-                return self.__set_type(value)
+                return self._set_type(value)
         return wrapper
 
     def _is_many(self, value):
@@ -185,7 +185,7 @@ class List(Iterable):
         return self.value.count(value)
 
     def sort(self, reverse=False):
-        self.proxy("sort")(desc=reverse, store=self.key)
+        self._proxy("sort")(desc=reverse, store=self.key)
 
 
 class Set(Iterable):
@@ -207,10 +207,10 @@ class Set(Iterable):
         return all([isinstance(value, Set) for value in values])
 
     def _reduce(self, op, values):
-        values = [v.value if isinstance(v, Set) else v for v in values]
-        value = reduce(op, values)
-        self._check_type(value)
-        return value
+        for i, value in enumerate(values):
+            self._check_type(set(value))
+            value = [v.value if isinstance(v, Set) else v for v in value]
+        return reduce(op, values)
 
     def add(self, value):
         self.update([value])
@@ -242,7 +242,7 @@ class Set(Iterable):
             keys = [value.key for value in values]
             return self.sinter(*keys)
         else:
-            return self._reduce(iand, [self.value] + values)
+            return self._reduce(iand, (self.value,) + values)
 
     def __iand__(self, *values):
         if self._all(values):
