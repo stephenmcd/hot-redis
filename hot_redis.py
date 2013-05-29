@@ -65,12 +65,38 @@ class Iterable(Base):
         super(Iterable, self).__init__(value, key)
         self.type = None
 
-    def check_type(self, value):
-        t = type(value)
-        if not self.type:
-            self.type = t
-        elif t != self.type:
-            raise TypeError("%s != %s" % (t, self.type))
+    def proxy(self, name):
+        func = super(Iterable, self).proxy(name)
+        def wrapper(*args, **kwargs):
+            value = func(*args, **kwargs)
+            if value is not None:
+                # Convert return values to underlying
+                # type attribute. If the return value is
+                # iterable and its type matches the class
+                # type (eg list -> List, set -> Set),
+                # convert type for each item and ensure
+                # the iterable type is maintained.
+                if type(value).__name__ == type(self).__name__.lower():
+                    if self.type == str:
+                        return value
+                    typed = map(self.type, value)
+                    if type(typed) != type(value):
+                        # Everything other than lists.
+                        typed = type(value)(typed)
+                    return typed
+                return self.type(value)
+        return wrapper
+
+    def check_type(self, value, many=False):
+        if many:
+            for v in value:
+                self.check_type(v)
+        else:
+            t = type(value)
+            if not self.type:
+                self.type = t
+            elif t != self.type:
+                raise TypeError("%s != %s" % (t, self.type))
 
 
 class List(Iterable):
@@ -84,17 +110,6 @@ class List(Iterable):
                 value = None
         if value:
             self.extend(value)
-
-    def proxy(self, name):
-        # in iterable?
-        func = super(List, self).proxy(name)
-        def wrapper(*args, **kwargs):
-            value = func(*args, **kwargs)
-            if value is not None:
-                if isinstance(value, list):
-                    return map(self.type, value)
-                return self.type(value)
-        return wrapper
 
     @property
     def value(self):
@@ -141,7 +156,7 @@ class List(Iterable):
         self.pop(i)
 
     def extend(self, l):
-        map(self.check_type, l)
+        self.check_type(l, many=True)
         self.rpush(*l)
 
     def append(self, value):
@@ -187,18 +202,20 @@ class Set(Iterable):
     def value(self):
         return self.smembers()
 
-    def all(self, values):
+    def _all(self, values):
         return all([isinstance(value, Set) for value in values])
 
-    def reduce(self, op, values):
+    def _reduce(self, op, values):
         values = [v.value if isinstance(v, Set) else v for v in values]
-        return reduce(op, values)
+        value = reduce(op, values)
+        self.check_type(value, many=True)
+        return value
 
     def add(self, value):
         self.update([value])
 
     def update(self, *values):
-        self.sadd(*self.reduce(ior, values))
+        self.sadd(*self._reduce(ior, values))
 
     def pop(self):
         return self.spop()
@@ -220,18 +237,18 @@ class Set(Iterable):
         return self.sismember(value)
 
     def __and__(self, *values):
-        if self.all(values):
+        if self._all(values):
             keys = [value.key for value in values]
             return self.sinter(*keys)
         else:
-            return self.reduce(iand, [self.value] + values)
+            return self._reduce(iand, [self.value] + values)
 
     def __iand__(self, *values):
-        if self.all(values):
+        if self._all(values):
             keys = [value.key for value in values]
             self.sinterstore(self.key, *keys)
         else:
-            self.update(self.reduce(iand, values))
+            self.update(self._reduce(iand, values))
         return self
 
     def __rand__(self, value):
