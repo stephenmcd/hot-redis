@@ -37,7 +37,7 @@ class Base(object):
     def __del__(self):
         self.delete()
 
-    def proxy(self, name):
+    def _proxy(self, name):
         try:
             func = getattr(client(), name)
         except AttributeError:
@@ -53,7 +53,7 @@ class Base(object):
         raise AttributeError
 
     def __getattr__(self, name):
-        return self.proxy(name)
+        return self._proxy(name)
 
     def __repr__(self):
         return "%s" % getattr(self, "value", "")
@@ -65,22 +65,22 @@ class Iterable(Base):
         super(Iterable, self).__init__(value, key)
         self.type = None
 
-    def proxy(self, name):
-        func = super(Iterable, self).proxy(name)
+    def _proxy(self, name):
+        func = super(Iterable, self)._proxy(name)
         def wrapper(*args, **kwargs):
             value = func(*args, **kwargs)
             if value is not None:
-                return self._set_type(value)
+                return self.__set_type(value)
         return wrapper
 
     def _is_many(self, value):
         return type(value).__name__ == type(self).__name__.lower()
 
-    def set_type(self, value):
+    def _set_type(self, value):
         if self.type == str:
             return value
         elif self._is_many(value):
-            typed_value = map(self.set_type, value)
+            typed_value = map(self._set_type, value)
             if type(typed_value) != type(value):
                 # Everything other than lists.
                 typed_value = type(value)(typed_value)
@@ -89,9 +89,9 @@ class Iterable(Base):
             return self.type(value)
         return value
 
-    def check_type(self, value):
+    def _check_type(self, value):
         if self._is_many(value):
-            map(self.check_type, value)
+            map(self._check_type, value)
         else:
             t = type(value)
             if not self.type:
@@ -147,7 +147,7 @@ class List(Iterable):
         return item
 
     def __setitem__(self, i, value):
-        self.check_type(value)
+        self._check_type(value)
         try:
             self.lset(i, value)
         except ResponseError:
@@ -157,14 +157,14 @@ class List(Iterable):
         self.pop(i)
 
     def extend(self, l):
-        self.check_type(l)
+        self._check_type(l)
         self.rpush(*l)
 
     def append(self, value):
         self.extend([value])
 
     def insert(self, i, value):
-        self.check_type(value)
+        self._check_type(value)
         self.list_insert(i, value)
 
     def pop(self, i=-1):
@@ -209,7 +209,7 @@ class Set(Iterable):
     def _reduce(self, op, values):
         values = [v.value if isinstance(v, Set) else v for v in values]
         value = reduce(op, values)
-        self.check_type(value)
+        self._check_type(value)
         return value
 
     def add(self, value):
