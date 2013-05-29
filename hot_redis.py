@@ -147,8 +147,8 @@ class List(Iterable):
     def __getitem__(self, i):
         if isinstance(i, slice):
             start = i.start if i.start is not None else 0
-            stop = i.stop if i.stop is not None else -1
-            return self.lrange(start, stop)
+            stop = i.stop if i.stop is not None else 0
+            return self.lrange(start, stop - 1)
         item = self.lindex(i)
         if item is None:
             raise IndexError
