@@ -33,3 +33,10 @@ function list_multiply()
         end
     end
 end
+
+function set_intersection_update()
+    local temp_key = KEYS[1] .. 'set_intersection_update'
+    redis.call('SADD', temp_key, unpack(ARGV))
+    redis.call('SINTERSTORE', KEYS[1], KEYS[1], temp_key)
+    redis.call('DEL', temp_key)
+end

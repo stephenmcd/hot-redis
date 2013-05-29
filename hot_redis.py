@@ -195,15 +195,16 @@ class Set(Iterable):
         self.type = None
         try:
             iter(value)
-            self.update(value)
         except TypeError:
-            pass
+            value = None
+        if value:
+            self.update(value)
 
     @property
     def value(self):
         return self.smembers()
 
-    def _all(self, values):
+    def _all_redis(self, values):
         return all([isinstance(value, Set) for value in values])
 
     def _reduce(self, op, values):
@@ -238,18 +239,19 @@ class Set(Iterable):
         return self.sismember(value)
 
     def __and__(self, *values):
-        if self._all(values):
+        if self._all_redis(values):
             keys = [value.key for value in values]
             return self.sinter(*keys)
         else:
             return self._reduce(iand, (self.value,) + values)
 
     def __iand__(self, *values):
-        if self._all(values):
+        if self._all_redis(values):
             keys = [value.key for value in values]
             self.sinterstore(self.key, *keys)
         else:
-            self.update(self._reduce(iand, values))
+            values = list(self._reduce(iand, values))
+            self.set_intersection_update(*values)
         return self
 
     def __rand__(self, value):
@@ -260,6 +262,7 @@ class Set(Iterable):
 
     def intersection_update(self, value):
         self &= value
+        return self
 
     def __or__(self, value):
         raise NotImplemented
