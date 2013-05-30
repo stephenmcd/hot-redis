@@ -104,6 +104,12 @@ class Iterable(Base):
             elif t != self.type:
                 raise TypeError("%s != %s" % (t, self.type))
 
+    def __eq__(self, value):
+        return self.value == self._to_value(value)
+
+    def __iter__(self):
+        return iter(self.value)
+
 
 class List(Iterable):
 
@@ -120,12 +126,6 @@ class List(Iterable):
     @property
     def value(self):
         return self[:]
-
-    def __eq__(self, l):
-        return self.value == self._to_value(l)
-
-    def __iter__(self):
-        return iter(self.value)
 
     def __add__(self, l):
         return List(self.value + self._to_value(l))
