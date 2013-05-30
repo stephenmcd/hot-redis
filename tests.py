@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 import unittest
 
@@ -135,12 +136,23 @@ class ListTests(unittest.TestCase):
         a = [4, 2, 0] * 10
         b = List(a)
         self.assertEquals(a.index(2), b.index(2))
-
+        self.assertRaises(ValueError, lambda: b.index(9000))
 
     def test_count(self):
-        pass
+        a = [4, 2, 0] * 10
+        b = List(a)
+        self.assertEquals(a.count(2), b.count(2))
+        self.assertEquals(a.count(9000), b.count(9000))
+
     def test_sort(self):
-        pass
+        a = [4, 2, 0] * 10
+        b = List(a)
+        a.sort()
+        b.sort()
+        self.assertEquals(a, b)
+        a.sort(reverse=True)
+        b.sort(reverse=True)
+        self.assertEquals(a, b)
 
 
 if __name__ == "__main__":
