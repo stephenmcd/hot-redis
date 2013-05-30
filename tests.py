@@ -161,15 +161,96 @@ class SetTests(unittest.TestCase):
         a = set([4, 2, 0])
         self.assertEquals(Set(a), a)
 
-    def test_append(self):
+    def test_add(self):
         a = set([4, 2, 0])
         b = Set(a)
         i = 9000
         a.add(i)
         b.add(i)
-        self.assertEquals(a, b)
+        self.assertEquals(b, a)
         self.assertRaises(TypeError, lambda: b.add("wulgus"))
 
+    def test_update(self):
+        a = set([4, 2, 0])
+        b = set([6, 6, 6])
+        c = set([0, 6, 9])
+        d = Set(a)
+        a.update(b, c)
+        d.update(b, c)
+        self.assertEquals(d, a)
+        self.assertRaises(TypeError, lambda: d.update(set(["wulgus"])))
+
+    def test_pop(self):
+        a = Set([4, 2, 0])
+        i = len(a)
+        b = a.pop()
+        self.assertEquals(len(a), i - 1)
+        self.assertNotIn(b, a)
+
+    def test_clear(self):
+        a = Set([4, 2, 0])
+        a.clear()
+        self.assertEquals(len(a), 0)
+
+    def test_remove(self):
+        a = Set([4, 2, 0])
+        i = len(a)
+        b = 4
+        a.remove(b)
+        self.assertEquals(len(a), i - 1)
+        self.assertNotIn(b, a)
+        self.assertRaises(TypeError, lambda: a.remove("wulgus"))
+        self.assertRaises(KeyError, lambda: a.remove(9000))
+
+    def test_discard(self):
+        a = Set([4, 2, 0])
+        i = len(a)
+        b = 4
+        a.discard(b)
+        self.assertEquals(len(a), i - 1)
+        self.assertNotIn(b, a)
+        self.assertRaises(TypeError, lambda: a.discard("wulgus"))
+        self.assertEquals(a.discard(9000), None)
+
+    def test_len(self):
+        a = set([4, 2, 0])
+        b = Set(a)
+        self.assertEquals(len(a), len(b))
+
+    def test_contains(self):
+        a = Set([4, 2, 0])
+        self.assertIn(4, a)
+        self.assertNotIn(9000, a)
+
+    def test_and(self):
+        a = set([4, 2, 0])
+        b = set([4, 2, 1])
+        self.assertEquals(a & b, Set(a) & b)
+
+    def test_iand(self):
+        a = set([4, 2, 0])
+        b = set([4, 2, 1])
+        c = Set(a)
+        a &= b
+        c &= b
+        self.assertEquals(c, a)
+
+    def test_rand(self):
+        a = set([4, 2, 0])
+        b = set([4, 2, 1])
+        self.assertEquals(b & a, b & Set(a))
+        self.assertEquals(b & a, Set(b) & Set(a))
+
+    def test_intersection(self):
+        a = set([4, 2, 0])
+        b = set([4, 2, 1])
+        c = set([4, 2, 2])
+        d = Set(a)
+        self.assertEquals(a.intersection(b), d.intersection(b))
+        self.assertEquals(a.intersection(b, c), d.intersection(b, c))
+        self.assertEquals(a.intersection(b, c), d.intersection(Set(b), c))
+        self.assertEquals(a.intersection(b, c), d.intersection(b, Set(c)))
+        self.assertEquals(a.intersection(b, c), d.intersection(Set(b), Set(c)))
 
 if __name__ == "__main__":
     unittest.main()
