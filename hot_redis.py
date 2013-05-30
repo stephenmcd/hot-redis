@@ -231,45 +231,51 @@ class Set(Iterable):
         return self.spop()
 
     def clear(self):
-        del self
+        self.delete()
 
-    def remove(self):
+    def remove(self, value):
+        self._check_type(value)
         if self.srem(value) == 0:
             raise KeyError
 
     def discard(self, value):
-        self.srem(value)
+        try:
+            self.remove(value)
+        except KeyError:
+            pass
 
-    def __len__(self, value):
+    def __len__(self):
         return self.scard()
 
     def __contains__(self, value):
         return self.sismember(value)
 
-    def __and__(self, *values):
+    def __and__(self, value):
+        return self.intersection(value)
+
+    def __iand__(self, value):
+        return self.intersection_update(value)
+
+    def __rand__(self, value):
+        if isinstance(value, Set):
+            return value & self
+        else:
+            return value & self.value
+
+    def intersection(self, *values):
         if self._all_redis(values):
             keys = [value.key for value in values]
             return self.sinter(*keys)
         else:
             return self._reduce(iand, (self.value,) + values)
 
-    def __iand__(self, *values):
+    def intersection_update(self, *values):
         if self._all_redis(values):
             keys = [value.key for value in values]
             self.sinterstore(self.key, *keys)
         else:
             values = list(self._reduce(iand, values))
             self.set_intersection_update(*values)
-        return self
-
-    def __rand__(self, value):
-        return value & self
-
-    def intersection(self, value):
-        return self & value
-
-    def intersection_update(self, value):
-        self &= value
         return self
 
     def __or__(self, value):
