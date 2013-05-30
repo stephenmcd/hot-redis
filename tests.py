@@ -2,7 +2,7 @@
 
 import unittest
 
-from hot_redis import List
+from hot_redis import List, Set
 
 
 class ListTests(unittest.TestCase):
@@ -153,6 +153,22 @@ class ListTests(unittest.TestCase):
         a.sort(reverse=True)
         b.sort(reverse=True)
         self.assertEquals(a, b)
+
+
+class SetTests(unittest.TestCase):
+
+    def test_value(self):
+        a = set([4, 2, 0])
+        self.assertEquals(Set(a), a)
+
+    def test_append(self):
+        a = set([4, 2, 0])
+        b = Set(a)
+        i = 9000
+        a.add(i)
+        b.add(i)
+        self.assertEquals(a, b)
+        self.assertRaises(TypeError, lambda: b.add("wulgus"))
 
 
 if __name__ == "__main__":
