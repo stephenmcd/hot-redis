@@ -1,6 +1,6 @@
 
 from contextlib import contextmanager
-from operator import iand, ior
+from operator import iand, ior, isub
 from uuid import uuid4
 from redis import Redis
 from redis.exceptions import ResponseError
@@ -265,7 +265,8 @@ class Set(Iterable):
         return self.intersection(value)
 
     def __iand__(self, value):
-        return self.intersection_update(value)
+        self.intersection_update(value)
+        return self
 
     def __rand__(self, value):
         if isinstance(value, Set):
@@ -290,28 +291,59 @@ class Set(Iterable):
         return self
 
     def __or__(self, value):
-        raise NotImplemented
+        return self.union(value)
+
     def __ior__(self, value):
-        raise NotImplemented
+        self.update(value)
+        return self
+
     def __ror__(self, value):
-        raise NotImplemented
-    def union(self, value):
-        raise NotImplemented
+        if isinstance(value, Set):
+            return value | self
+        else:
+            return value | self.value
+
+    def union(self, *values):
+        if self._all_redis(values):
+            keys = [value.key for value in values]
+            return self.sunion(*keys)
+        else:
+            return self._reduce(ior, (self.value,) + values)
+
+    def __sub__(self, value):
+        return self.difference(value)
+
+    def __isub__(self, value):
+        self.difference_update(value)
+        return self
+
+    def __rsub__(self, value):
+        if isinstance(value, Set):
+            return value - self
+        else:
+            return value - self.value
+
+    def difference(self, *values):
+        if self._all_redis(values):
+            keys = [value.key for value in values]
+            return self.sdiff(*keys)
+        else:
+            return self._reduce(isub, (self.value,) + values)
+
+    def difference_update(self, *values):
+        if self._all_redis(values):
+            keys = [value.key for value in values]
+            self.sdiffstore(self.key, *keys)
+        else:
+            values = list(self._reduce(isub, values))
+            self.set_difference_update(*values)
+        return self
 
     def __xor__(self, value):
         raise NotImplemented
     def symmetric_difference(self, value):
         raise NotImplemented
     def symmetric_difference_update(self, value):
-        raise NotImplemented
-
-    def __sub__(self, value):
-        raise NotImplemented
-    def __isub__(self, value):
-        raise NotImplemented
-    def __rsub__(self, value):
-        raise NotImplemented
-    def difference(self, value):
         raise NotImplemented
 
     def issubset(self, value):

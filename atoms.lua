@@ -40,3 +40,10 @@ function set_intersection_update()
     redis.call('SINTERSTORE', KEYS[1], KEYS[1], temp_key)
     redis.call('DEL', temp_key)
 end
+
+function set_difference_update()
+    local temp_key = KEYS[1] .. 'set_difference_update'
+    redis.call('SADD', temp_key, unpack(ARGV))
+    redis.call('SDIFFSTORE', KEYS[1], KEYS[1], temp_key)
+    redis.call('DEL', temp_key)
+end
