@@ -56,7 +56,7 @@ class Base(object):
         return self._proxy(name)
 
     def __repr__(self):
-        return "%s" % self.value
+        return "%s(%s, '%s')" % (self.__class__.__name__, self.value, self.key)
 
 
 class Iterable(Base):
