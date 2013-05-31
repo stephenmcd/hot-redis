@@ -288,5 +288,20 @@ class SetTests(unittest.TestCase):
         self.assertTrue(b.isdisjoint(d))
         self.assertTrue(b.isdisjoint(e))
 
+    def test_cmp(self):
+        a = set([4, 2, 0])
+        b = set([6, 6, 6])
+        c = Set(a)
+        d = Set(b)
+        self.assertEquals(a > b, c > d)
+        self.assertEquals(a < b, c < d)
+        self.assertEquals(a > b, c > b)
+        self.assertEquals(a < b, c < b)
+        self.assertEquals(a >= b, c >= d)
+        self.assertEquals(a <= b, c <= d)
+        self.assertEquals(a >= b, c >= b)
+        self.assertEquals(a <= b, c <= b)
+
+
 if __name__ == "__main__":
     unittest.main()
