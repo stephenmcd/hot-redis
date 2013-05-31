@@ -301,6 +301,10 @@ class SetTests(unittest.TestCase):
         self.assertEquals(a <= b, c <= d)
         self.assertEquals(a >= b, c >= b)
         self.assertEquals(a <= b, c <= b)
+        self.assertEquals(a.issubset(b), c.issubset(d))
+        self.assertEquals(a.issuperset(b), c.issuperset(d))
+        self.assertEquals(a.issubset(b), c.issubset(b))
+        self.assertEquals(a.issuperset(b), c.issuperset(b))
 
 
 if __name__ == "__main__":
