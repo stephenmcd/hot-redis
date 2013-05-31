@@ -110,6 +110,17 @@ class Iterable(Base):
     def __iter__(self):
         return iter(self.value)
 
+    def __lt__(self, value):
+        return self.value < self._to_value(value)
+
+    def __le__(self, value):
+        return self.value <= self._to_value(value)
+
+    def __gt__(self, value):
+        return self.value > self._to_value(value)
+
+    def __ge__(self, value):
+        return self.value >= self._to_value(value)
 
 class List(Iterable):
 
@@ -304,11 +315,13 @@ class Set(Iterable):
         raise NotImplemented
 
     def issubset(self, value):
-        raise NotImplemented
+        return self <= value
+
     def issuperset(self, value):
-        raise NotImplemented
+        return self >= value
+
     def isdisjoint(self, value):
-        raise NotImplemented
+        return not self.intersection(value)
 
 
 class Dict(Iterable):
