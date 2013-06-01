@@ -47,3 +47,34 @@ function set_difference_update()
     redis.call('SDIFFSTORE', KEYS[1], KEYS[1], temp_key)
     redis.call('DEL', temp_key)
 end
+
+function set_symmetric_difference()
+
+    local action = table.remove(ARGV, 1)
+    local other_key = ARGV[1]
+    local temp_key1 = KEYS[1] .. 'set_symmetric_difference_temp1'
+    local temp_key2 = KEYS[1] .. 'set_symmetric_difference_temp2'
+    local result = nil
+
+    if action == 'create' then
+        other_key = KEYS[1] .. 'set_symmetric_difference_create'
+        redis.call('SADD', other_key, unpack(ARGV))
+    end
+
+    redis.call('SDIFFSTORE', temp_key1, KEYS[1], other_key)
+    redis.call('SDIFFSTORE', temp_key2, other_key, KEYS[1])
+
+    if action == 'update' then
+        redis.call('SUNIONSTORE', KEYS[1], temp_key1, temp_key2)
+    else
+        result = redis.call('SUNION', temp_key1, temp_key2)
+        if action == 'create' then
+            redis.call('DEL', other_key)
+        end
+    end
+
+    redis.call('DEL', temp_key1)
+    redis.call('DEL', temp_key2)
+    return result
+
+end

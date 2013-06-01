@@ -1,6 +1,6 @@
 
 from contextlib import contextmanager
-from operator import iand, ior, isub
+from operator import and_, or_, sub, xor
 from uuid import uuid4
 from redis import Redis
 from redis.exceptions import ResponseError
@@ -122,6 +122,7 @@ class Iterable(Base):
     def __ge__(self, value):
         return self.value >= self._to_value(value)
 
+
 class List(Iterable):
 
     def __init__(self, value=None, key=None):
@@ -236,7 +237,7 @@ class Set(Iterable):
         self.update([value])
 
     def update(self, *values):
-        self.sadd(*self._reduce(ior, values))
+        self.sadd(*self._reduce(or_, values))
 
     def pop(self):
         return self.spop()
@@ -264,7 +265,7 @@ class Set(Iterable):
     def __and__(self, value):
         return self.intersection(value)
 
-    def __iand__(self, value):
+    def __iand___(self, value):
         self.intersection_update(value)
         return self
 
@@ -279,21 +280,21 @@ class Set(Iterable):
             keys = [value.key for value in values]
             return self.sinter(*keys)
         else:
-            return self._reduce(iand, (self.value,) + values)
+            return self._reduce(and_, (self.value,) + values)
 
     def intersection_update(self, *values):
         if self._all_redis(values):
             keys = [value.key for value in values]
             self.sinterstore(self.key, *keys)
         else:
-            values = list(self._reduce(iand, values))
+            values = list(self._reduce(and_, values))
             self.set_intersection_update(*values)
         return self
 
     def __or__(self, value):
         return self.union(value)
 
-    def __ior__(self, value):
+    def __ior___(self, value):
         self.update(value)
         return self
 
@@ -308,7 +309,7 @@ class Set(Iterable):
             keys = [value.key for value in values]
             return self.sunion(*keys)
         else:
-            return self._reduce(ior, (self.value,) + values)
+            return self._reduce(or_, (self.value,) + values)
 
     def __sub__(self, value):
         return self.difference(value)
@@ -328,23 +329,42 @@ class Set(Iterable):
             keys = [value.key for value in values]
             return self.sdiff(*keys)
         else:
-            return self._reduce(isub, (self.value,) + values)
+            return self._reduce(sub, (self.value,) + values)
 
     def difference_update(self, *values):
         if self._all_redis(values):
             keys = [value.key for value in values]
             self.sdiffstore(self.key, *keys)
         else:
-            values = list(self._reduce(isub, values))
+            values = list(self._reduce(sub, values))
             self.set_difference_update(*values)
         return self
 
     def __xor__(self, value):
-        raise NotImplemented
+        return self.symmetric_difference(value)
+
+    def __ixor__(self, value):
+        self.symmetric_difference_update(value)
+        return self
+
+    def __rxor__(self, value):
+        if isinstance(value, Set):
+            return value ^ self
+        else:
+            return value ^ self.value
+
     def symmetric_difference(self, value):
-        raise NotImplemented
+        if isinstance(value, Set):
+            return self.set_symmetric_difference("return", value.key)
+        else:
+            return self ^ value
+
     def symmetric_difference_update(self, value):
-        raise NotImplemented
+        if isinstance(value, Set):
+            self.set_symmetric_difference("update", value.key)
+        else:
+            self.set_symmetric_difference("create", *value)
+        return self
 
     def issubset(self, value):
         return self <= value
