@@ -277,6 +277,47 @@ class SetTests(unittest.TestCase):
         e.intersection_update(Set(b), Set(c))
         self.assertEquals(e, d)
 
+    def test_difference(self):
+        a = set([4, 2, 0])
+        b = set([4, 2, 1])
+        c = set([4, 2, 2])
+        d = Set(a)
+        e = a.difference(b, c)
+        self.assertEquals(a.difference(b), d.difference(b))
+        self.assertEquals(e, d.difference(b, c))
+        self.assertEquals(e, d.difference(Set(b), c))
+        self.assertEquals(e, d.difference(b, Set(c)))
+        self.assertEquals(e, d.difference(Set(b), Set(c)))
+
+    def test_difference_update(self):
+        a = set([4, 2, 0])
+        b = set([4, 2, 1])
+        c = set([4, 2, 2])
+        d = a.copy()
+        d.difference_update(b)
+        e = Set(a)
+        e.difference_update(b)
+        self.assertEquals(e, d)
+        d = a.copy()
+        d.difference_update(b, c)
+        e = Set(a)
+        e.difference_update(b, c)
+        self.assertEquals(e, d)
+        e = Set(a)
+        e.difference_update(Set(b), c)
+        self.assertEquals(e, d)
+        e = Set(a)
+        e.difference_update(b, Set(c))
+        self.assertEquals(e, d)
+        e = Set(a)
+        e.difference_update(Set(b), Set(c))
+        self.assertEquals(e, d)
+
+    def test_symmetric_difference(self):
+        pass
+    def test_symmetric_difference_update(self):
+        pass
+
     def test_disjoint(self):
         a = set([4, 2, 0])
         b = Set(a)
