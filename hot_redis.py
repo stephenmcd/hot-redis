@@ -64,6 +64,8 @@ class Iterable(Base):
     def __init__(self, value=None, key=None):
         super(Iterable, self).__init__(value, key)
         self.type = None
+        if self._is_many(value):
+            self.value = value
 
     def _proxy(self, name):
         func = super(Iterable, self)._proxy(name)
@@ -79,7 +81,7 @@ class Iterable(Base):
         return value
 
     def _is_many(self, value):
-        return type(value).__name__ == type(self).__name__.lower()
+        return hasattr(value, "__iter__")
 
     def _set_type(self, value):
         if self.type == str:
@@ -125,19 +127,13 @@ class Iterable(Base):
 
 class List(Iterable):
 
-    def __init__(self, value=None, key=None):
-        super(List, self).__init__(value, key)
-        if not isinstance(value, list):
-            try:
-                list(value)
-            except TypeError:
-                value = None
-        if value:
-            self.extend(value)
-
     @property
     def value(self):
         return self[:]
+
+    @value.setter
+    def value(self, value):
+        self.extend(value)
 
     def __add__(self, l):
         return List(self.value + self._to_value(l))
@@ -210,28 +206,29 @@ class List(Iterable):
 
 class Set(Iterable):
 
-    def __init__(self, value=None, key=None):
-        super(Set, self).__init__(value, key)
-        self.type = None
-        try:
-            iter(value)
-        except TypeError:
-            value = None
-        if value:
-            self.update(value)
-
     @property
     def value(self):
         return self.smembers()
+
+    @value.setter
+    def value(self, value):
+        self.update(value)
 
     def _all_redis(self, values):
         return all([isinstance(value, Set) for value in values])
 
     def _reduce(self, op, values):
-        for i, value in enumerate(values):
-            self._check_type(set(value))
-            value = [v.value if isinstance(v, Set) else v for v in value]
-        return reduce(op, values)
+        checked_values = []
+        for value in values:
+            self._check_type(value)
+            checked_values.append(set(map(self._to_value, value)))
+        return reduce(op, checked_values)
+
+    def _rop(self, op, value):
+        return op(value, self if isinstance(value, Set) else self.value)
+
+    def _to_keys(self, values):
+        return [value.key for value in values]
 
     def add(self, value):
         self.update([value])
@@ -270,22 +267,17 @@ class Set(Iterable):
         return self
 
     def __rand__(self, value):
-        if isinstance(value, Set):
-            return value & self
-        else:
-            return value & self.value
+        return self._rop(and_, value)
 
     def intersection(self, *values):
         if self._all_redis(values):
-            keys = [value.key for value in values]
-            return self.sinter(*keys)
+            return self.sinter(*self._to_keys(values))
         else:
             return self._reduce(and_, (self.value,) + values)
 
     def intersection_update(self, *values):
         if self._all_redis(values):
-            keys = [value.key for value in values]
-            self.sinterstore(self.key, *keys)
+            self.sinterstore(self.key, *self._to_keys(values))
         else:
             values = list(self._reduce(and_, values))
             self.set_intersection_update(*values)
@@ -299,15 +291,11 @@ class Set(Iterable):
         return self
 
     def __ror__(self, value):
-        if isinstance(value, Set):
-            return value | self
-        else:
-            return value | self.value
+        return self._rop(or_, value)
 
     def union(self, *values):
         if self._all_redis(values):
-            keys = [value.key for value in values]
-            return self.sunion(*keys)
+            return self.sunion(*self._to_keys(values))
         else:
             return self._reduce(or_, (self.value,) + values)
 
@@ -319,25 +307,20 @@ class Set(Iterable):
         return self
 
     def __rsub__(self, value):
-        if isinstance(value, Set):
-            return value - self
-        else:
-            return value - self.value
+        return self._rop(sub, value)
 
     def difference(self, *values):
         if self._all_redis(values):
-            keys = [value.key for value in values]
-            return self.sdiff(*keys)
+            return self.sdiff(*self._to_keys(values))
         else:
             return self._reduce(sub, (self.value,) + values)
 
     def difference_update(self, *values):
         if self._all_redis(values):
-            keys = [value.key for value in values]
-            self.sdiffstore(self.key, *keys)
+            self.sdiffstore(self.key, *self._to_keys(values))
         else:
-            values = list(self._reduce(sub, values))
-            self.set_difference_update(*values)
+            with pipeline():
+                self.difference_update(*[Set(value) for value in values])
         return self
 
     def __xor__(self, value):
@@ -348,16 +331,13 @@ class Set(Iterable):
         return self
 
     def __rxor__(self, value):
-        if isinstance(value, Set):
-            return value ^ self
-        else:
-            return value ^ self.value
+        return self._rop(xor, value)
 
     def symmetric_difference(self, value):
         if isinstance(value, Set):
             return self.set_symmetric_difference("return", value.key)
         else:
-            return self ^ value
+            return self.value ^ value
 
     def symmetric_difference_update(self, value):
         if isinstance(value, Set):
@@ -366,20 +346,24 @@ class Set(Iterable):
             self.set_symmetric_difference("create", *value)
         return self
 
+    def isdisjoint(self, value):
+        return not self.intersection(value)
+
     def issubset(self, value):
         return self <= value
 
     def issuperset(self, value):
         return self >= value
 
-    def isdisjoint(self, value):
-        return not self.intersection(value)
-
 
 class Dict(Iterable):
 
-    def __init__(self, value=None, key=None):
-        super(Dict, self).__init__(value, key)
+    @property
+    def value(self):
+        return self.hgetall()
+
+    @value.setter
+    def value(self, value):
         if not isinstance(value, dict):
             try:
                 value = dict(value)
@@ -387,10 +371,6 @@ class Dict(Iterable):
                 value = None
         if value:
             self.update(value)
-
-    @property
-    def value(self):
-        return self.hgetall()
 
     def update(self, value):
         self.hmset(value)
