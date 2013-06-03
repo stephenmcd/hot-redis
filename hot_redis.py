@@ -1,32 +1,24 @@
 
-from contextlib import contextmanager
 from operator import and_, or_, sub, xor
 from uuid import uuid4
 from redis import Redis
 from redis.exceptions import ResponseError
 
 
-redis = Redis()
-_pipeline = None
-client = lambda: _pipeline or redis
+_redis = Redis()
+_lua_scripts = {}
 
-@contextmanager
-def pipeline():
-    global _pipeline
-    _pipeline = redis.pipeline()
-    yield
-    _pipeline.execute()
-    _pipeline = None
+def _load_lua_scripts():
+    with open("atoms.lua", "r") as f:
+        for func in f.read().strip().split("function "):
+            if not func:
+                continue
+            name, code = func.split("\n", 1)
+            name = name.split("(")[0].strip()
+            code = code.rsplit("end", 1)[0].strip()
+            _lua_scripts[name] = _redis.register_script(code)
 
-lua_funcs = {}
-with open("atoms.lua", "r") as f:
-    for func in f.read().strip().split("function "):
-        if not func:
-            continue
-        name, code = func.split("\n", 1)
-        name = name.split("(")[0].strip()
-        code = code.rsplit("end", 1)[0].strip()
-        lua_funcs[name] = redis.register_script(code)
+_load_lua_scripts()
 
 
 class Base(object):
@@ -39,13 +31,13 @@ class Base(object):
 
     def _proxy(self, name):
         try:
-            func = getattr(client(), name)
+            func = getattr(_redis, name)
         except AttributeError:
             pass
         else:
             return lambda *a, **k: func(self.key, *a, **k)
         try:
-            func = lua_funcs[name]
+            func = _lua_scripts[name]
         except KeyError:
             pass
         else:
