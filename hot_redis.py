@@ -319,8 +319,8 @@ class Set(Iterable):
         if self._all_redis(values):
             self.sdiffstore(self.key, *self._to_keys(values))
         else:
-            with pipeline():
-                self.difference_update(*[Set(value) for value in values])
+            values = list(self._reduce(sub, values))
+            self.set_difference_update(*values)
         return self
 
     def __xor__(self, value):

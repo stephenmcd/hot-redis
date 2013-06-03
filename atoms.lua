@@ -43,11 +43,9 @@ end
 
 function set_difference_update()
     local temp_key = KEYS[1] .. 'set_difference_update'
-    for i, v in pairs(ARGV) do
-        redis.call('SADD', temp_key, unpack(ARGV[i]))
-        redis.call('SDIFFSTORE', KEYS[1], KEYS[1], temp_key)
-        redis.call('DEL', temp_key)
-    end
+    redis.call('SADD', temp_key, unpack(ARGV))
+    redis.call('SDIFFSTORE', KEYS[1], KEYS[1], temp_key)
+    redis.call('DEL', temp_key)
 end
 
 function set_symmetric_difference()
