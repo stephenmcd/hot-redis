@@ -222,25 +222,6 @@ class SetTests(unittest.TestCase):
         self.assertIn(4, a)
         self.assertNotIn(9000, a)
 
-    def test_and(self):
-        a = set([4, 2, 0])
-        b = set([4, 2, 1])
-        self.assertEquals(a & b, Set(a) & b)
-
-    def test_iand(self):
-        a = set([4, 2, 0])
-        b = set([4, 2, 1])
-        c = Set(a)
-        a &= b
-        c &= b
-        self.assertEquals(c, a)
-
-    def test_rand(self):
-        a = set([4, 2, 0])
-        b = set([4, 2, 1])
-        self.assertEquals(b & a, b & Set(a))
-        self.assertEquals(b & a, Set(b) & Set(a))
-
     def test_intersection(self):
         a = set([4, 2, 0])
         b = set([4, 2, 1])
@@ -314,10 +295,25 @@ class SetTests(unittest.TestCase):
         self.assertEquals(e, d)
 
     def test_symmetric_difference(self):
-        pass
+        a = set([4, 2, 0])
+        b = set([4, 2, 1])
+        c = Set(a)
+        d = a.symmetric_difference(b)
+        self.assertEquals(d, c.symmetric_difference(b))
+        self.assertEquals(d, c.symmetric_difference(Set(b)))
+        self.assertEquals(d, a.symmetric_difference(Set(b)))
 
     def test_symmetric_difference_update(self):
-        pass
+        a = set([4, 2, 0])
+        b = set([4, 2, 1])
+        c = a.copy()
+        c.difference_update(b)
+        d = Set(a)
+        d.difference_update(b)
+        self.assertEquals(d, c)
+        d = Set(a)
+        d.difference_update(Set(b))
+        self.assertEquals(d, c)
 
     def test_disjoint(self):
         a = set([4, 2, 0])

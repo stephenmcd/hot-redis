@@ -330,7 +330,7 @@ class Set(Iterable):
 
     def symmetric_difference(self, value):
         if isinstance(value, Set):
-            return self.set_symmetric_difference("return", value.key)
+            return set(self.set_symmetric_difference("return", value.key))
         else:
             return self.value ^ value
 
