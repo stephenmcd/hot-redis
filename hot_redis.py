@@ -319,8 +319,11 @@ class Set(Iterable):
         if self._all_redis(values):
             self.sdiffstore(self.key, *self._to_keys(values))
         else:
-            values = list(self._reduce(sub, values))
-            self.set_difference_update(*values)
+            all_values = [str(uuid4())]
+            for value in values:
+                all_values.extend(value)
+                all_values.append(all_values[0])
+            self.set_difference_update(*all_values)
         return self
 
     def __xor__(self, value):

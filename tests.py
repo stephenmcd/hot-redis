@@ -315,6 +315,7 @@ class SetTests(unittest.TestCase):
 
     def test_symmetric_difference(self):
         pass
+
     def test_symmetric_difference_update(self):
         pass
 
