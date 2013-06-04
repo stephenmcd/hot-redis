@@ -44,59 +44,16 @@ class Base(object):
             return lambda *a, **k: func(keys=[self.key], args=a, **k)
         raise AttributeError(name)
 
-    def __getattr__(self, name):
-        return self._proxy(name)
-
-    def __repr__(self):
-        return "%s(%s, '%s')" % (self.__class__.__name__, self.value, self.key)
-
-
-class Iterable(Base):
-
-    def __init__(self, value=None, key=None):
-        super(Iterable, self).__init__(value, key)
-        self.type = None
-        if self._is_many(value):
-            self.value = value
-
-    def _proxy(self, name):
-        func = super(Iterable, self)._proxy(name)
-        def wrapper(*args, **kwargs):
-            value = func(*args, **kwargs)
-            if value is not None:
-                return self._set_type(value)
-        return wrapper
-
     def _to_value(self, value):
         if type(value) == type(self):
             return value.value
         return value
 
-    def _is_many(self, value):
-        return hasattr(value, "__iter__")
+    def __getattr__(self, name):
+        return self._proxy(name)
 
-    def _set_type(self, value):
-        if self.type == str:
-            return value
-        elif self._is_many(value):
-            typed_value = map(self._set_type, value)
-            if type(typed_value) != type(value):
-                # Everything other than lists.
-                typed_value = type(value)(typed_value)
-            return typed_value
-        elif self.type:
-            return self.type(value)
-        return value
-
-    def _check_type(self, value):
-        if self._is_many(value):
-            map(self._check_type, value)
-        else:
-            t = type(value)
-            if not self.type:
-                self.type = t
-            elif t != self.type:
-                raise TypeError("%s != %s" % (t, self.type))
+    def __repr__(self):
+        return "%s(%s, '%s')" % (self.__class__.__name__, self.value, self.key)
 
     def __eq__(self, value):
         return self.value == self._to_value(value)
@@ -117,7 +74,7 @@ class Iterable(Base):
         return self.value >= self._to_value(value)
 
 
-class List(Iterable):
+class List(Base):
 
     @property
     def value(self):
@@ -155,7 +112,6 @@ class List(Iterable):
         return item
 
     def __setitem__(self, i, value):
-        self._check_type(value)
         try:
             self.lset(i, value)
         except ResponseError:
@@ -165,14 +121,12 @@ class List(Iterable):
         self.pop(i)
 
     def extend(self, l):
-        self._check_type(l)
         self.rpush(*l)
 
     def append(self, value):
         self.extend([value])
 
     def insert(self, i, value):
-        self._check_type(value)
         self.list_insert(i, value)
 
     def pop(self, i=-1):
@@ -196,7 +150,7 @@ class List(Iterable):
         self._proxy("sort")(desc=reverse, store=self.key)
 
 
-class Set(Iterable):
+class Set(Base):
 
     @property
     def value(self):
@@ -209,13 +163,6 @@ class Set(Iterable):
     def _all_redis(self, values):
         return all([isinstance(value, Set) for value in values])
 
-    def _reduce(self, op, values):
-        checked_values = []
-        for value in values:
-            self._check_type(value)
-            checked_values.append(set(map(self._to_value, value)))
-        return reduce(op, checked_values)
-
     def _rop(self, op, value):
         return op(value, self if isinstance(value, Set) else self.value)
 
@@ -226,7 +173,7 @@ class Set(Iterable):
         self.update([value])
 
     def update(self, *values):
-        self.sadd(*self._reduce(or_, values))
+        self.sadd(*reduce(or_, values))
 
     def pop(self):
         return self.spop()
@@ -235,9 +182,8 @@ class Set(Iterable):
         self.delete()
 
     def remove(self, value):
-        self._check_type(value)
         if self.srem(value) == 0:
-            raise KeyError
+            raise KeyError(value)
 
     def discard(self, value):
         try:
@@ -265,13 +211,13 @@ class Set(Iterable):
         if self._all_redis(values):
             return self.sinter(*self._to_keys(values))
         else:
-            return self._reduce(and_, (self.value,) + values)
+            return reduce(and_, (self.value,) + values)
 
     def intersection_update(self, *values):
         if self._all_redis(values):
             self.sinterstore(self.key, *self._to_keys(values))
         else:
-            values = list(self._reduce(and_, values))
+            values = list(reduce(and_, values))
             self.set_intersection_update(*values)
         return self
 
@@ -289,7 +235,7 @@ class Set(Iterable):
         if self._all_redis(values):
             return self.sunion(*self._to_keys(values))
         else:
-            return self._reduce(or_, (self.value,) + values)
+            return reduce(or_, (self.value,) + values)
 
     def __sub__(self, value):
         return self.difference(value)
@@ -305,7 +251,7 @@ class Set(Iterable):
         if self._all_redis(values):
             return self.sdiff(*self._to_keys(values))
         else:
-            return self._reduce(sub, (self.value,) + values)
+            return reduce(sub, (self.value,) + values)
 
     def difference_update(self, *values):
         if self._all_redis(values):
@@ -351,7 +297,7 @@ class Set(Iterable):
         return self >= value
 
 
-class Dict(Iterable):
+class Dict(Base):
 
     @property
     def value(self):
@@ -365,9 +311,12 @@ class Dict(Iterable):
             except TypeError:
                 value = None
         if value:
+            self._check_type(value)
             self.update(value)
 
     def update(self, value):
+        # if value:
+        #     self._check_type(value.values()[0])
         self.hmset(value)
 
     def keys(self):
