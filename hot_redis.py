@@ -25,6 +25,8 @@ class Base(object):
 
     def __init__(self, value=None, key=None):
         self.key = key or str(uuid4())
+        if value:
+            self.value = value
 
     def __del__(self):
         self.delete()
@@ -311,7 +313,6 @@ class Dict(Base):
             except TypeError:
                 value = None
         if value:
-            self._check_type(value)
             self.update(value)
 
     def update(self, value):

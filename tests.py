@@ -38,13 +38,13 @@ class ListTests(unittest.TestCase):
 
     def test_mul(self):
         a = ["4", "2", "0"]
-        i = "9000"
+        i = 9000
         self.assertEquals(a * i, List(a) * i)
 
     def test_imul(self):
         a = ["4", "2", "0"]
         b = List(a)
-        i = "9000"
+        i = 9000
         b *= i
         self.assertEquals(a * i, b)
 
@@ -135,7 +135,8 @@ class ListTests(unittest.TestCase):
     def test_index(self):
         a = ["4", "2", "0"] * 10
         b = List(a)
-        self.assertEquals(a.index(2), b.index(2))
+        c = "2"
+        self.assertEquals(a.index(c), b.index(c))
         self.assertRaises(ValueError, lambda: b.index("9000"))
 
     def test_count(self):
