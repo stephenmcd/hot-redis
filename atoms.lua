@@ -84,3 +84,16 @@ function set_symmetric_difference()
     return result
 
 end
+
+function string_multiply()
+    local s = redis.call('GET', KEYS[1])
+    redis.call('SET', KEYS[1], string.rep(s, tonumber(ARGV[1])))
+end
+
+function string_setitem()
+    local s = redis.call('GET', KEYS[1])
+    local start = tonumber(ARGV[1])
+    local stop = tonumber(ARGV[2])
+    s = string.sub(s, 1, start) .. ARGV[3] .. string.sub(s, stop)
+    redis.call('SET', KEYS[1], s)
+end

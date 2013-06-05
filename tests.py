@@ -2,7 +2,7 @@
 
 import unittest
 
-from hot_redis import List, Set, Dict
+from hot_redis import List, Set, Dict, String
 
 
 class ListTests(unittest.TestCase):
@@ -440,6 +440,45 @@ class DictTests(unittest.TestCase):
         self.assertFalse(c["wagwaan"])
         c = Dict.fromkeys(a, b)
         self.assertEquals(c["wagwaan"], b)
+
+
+class StringTests(unittest.TestCase):
+
+    def test_value(self):
+        a = "wagwaan"
+        self.assertEquals(String(a), a)
+
+    def test_add(self):
+        a = "wagwaan"
+        b = "hotskull"
+        self.assertEquals(a + b, String(a) + String(b))
+        self.assertEquals(a + b, String(a) + b)
+
+    def test_iadd(self):
+        a = "wagwaan"
+        b = "hotskull"
+        c = String(a)
+        d = String(b)
+        d += c
+        c += b
+        self.assertEquals(a + b, c)
+        self.assertEquals(b + a, d)
+
+    def test_mul(self):
+        a = "wagwaan"
+        i = 9000
+        self.assertEquals(a * i, String(a) * i)
+
+    def test_imul(self):
+        a = "wagwaan"
+        b = String(a)
+        i = 9000
+        b *= i
+        self.assertEquals(a * i, b)
+
+    def test_len(self):
+        a = "wagwaan"
+        self.assertEquals(len(a), len(String(a)))
 
 
 if __name__ == "__main__":

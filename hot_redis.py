@@ -41,6 +41,12 @@ class Base(object):
             pass
         else:
             return lambda *a, **k: func(keys=[self.key], args=a, **k)
+        try:
+            func = getattr(self.value, name)
+        except KeyError:
+            pass
+        else:
+            return func
         raise AttributeError(name)
 
     def _to_value(self, value):
@@ -52,7 +58,8 @@ class Base(object):
         return self._proxy(name)
 
     def __repr__(self):
-        return "%s(%s, '%s')" % (self.__class__.__name__, self.value, self.key)
+        value = repr(self.value)
+        return "%s(%s, '%s')" % (self.__class__.__name__, value, self.key)
 
     def __eq__(self, value):
         return self.value == self._to_value(value)
@@ -395,14 +402,50 @@ class String(Base):
         if value:
             self.set(value)
 
-    def __iadd__(self, value):
-        self.append(value)
+    def __add__(self, s):
+        return String(self.value + self._to_value(s))
+
+    def __iadd__(self, s):
+        self.append(s)
+        return self
+
+    def __mul__(self, i):
+        return String(self.value * i)
+
+    def __imul__(self, i):
+        self.string_multiply(i)
+        return self
 
     def __len__(self, value):
         return self.strlen()
 
-    # def __setitem__(self, i, value):
-    #     self.setrange()
+    def __setitem__(self, i, value):
+        if isinstance(i, slice):
+            start = i.start if i.start is not None else 0
+            stop = i.stop
+        else:
+            start = i
+            stop = None
+        if stop is not None and stop < start + len(value):
+            self.string_setitem(start, stop, value)
+        else:
+            self.setrange(start, value)
 
-    # def __getitem__(self, i):
-    #     self.getrange()
+    def __getitem__(self, i):
+        if not isinstance(i, slice):
+            i = slice(i, i + 1)
+        start = i.start if i.start is not None else 0
+        stop = i.stop if i.stop is not None else 0
+        return self.getrange(start, stop - 1)
+
+
+class ImmutableString(String):
+
+    def __iadd__(self, s):
+        return self.__add__(s)
+
+    def __imul__(self, s):
+        return self.__mul__(s)
+
+    def __setitem__(self, i):
+        raise TypeError
