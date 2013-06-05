@@ -348,3 +348,9 @@ class Dict(Base):
     def __delitem__(self, name):
         if self.hdel(name) == 0:
             raise KeyError(name)
+
+    def __len__(self):
+        return self.hlen()
+
+    def __contains__(self, name):
+        return self.hexists(name)

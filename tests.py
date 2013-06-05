@@ -75,6 +75,17 @@ class ListTests(unittest.TestCase):
         self.assertEquals(a, b)
         # todo: slice?
 
+    def test_len(self):
+        a = ["wagwaan", "hot", "skull"]
+        b = List(a)
+        self.assertEquals(len(a), len(b))
+
+    def test_contains(self):
+        a = ["wagwaan", "hot", "skull"]
+        b = List(a)
+        self.assertIn("wagwaan", a)
+        self.assertNotIn("hotskull", a)
+
     def test_extend(self):
         a = ["wagwaan", "hot", "skull"]
         b = ["nba", "hang", "time"]
@@ -397,6 +408,17 @@ class DictTests(unittest.TestCase):
         def del_missing():
             del a["hotskull"]
         self.assertRaises(KeyError, del_missing)
+
+    def test_len(self):
+        a = {"wagwaan": "popcaan", "flute": "don"}
+        b = Dict(a)
+        self.assertEquals(len(a), len(b))
+
+    def test_contains(self):
+        a = {"wagwaan": "popcaan", "flute": "don"}
+        b = Dict(a)
+        self.assertIn("wagwaan", a)
+        self.assertNotIn("hotskull", a)
 
 
 if __name__ == "__main__":
