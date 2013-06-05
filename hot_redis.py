@@ -382,3 +382,27 @@ class Dict(Base):
         if len(args) == 1:
             args += ("",)
         return cls({}.fromkeys(*args))
+
+
+class String(Base):
+
+    @property
+    def value(self):
+        return self.get()
+
+    @value.setter
+    def value(self, value):
+        if value:
+            self.set(value)
+
+    def __iadd__(self, value):
+        self.append(value)
+
+    def __len__(self, value):
+        return self.strlen()
+
+    # def __setitem__(self, i, value):
+    #     self.setrange()
+
+    # def __getitem__(self, i):
+    #     self.getrange()
