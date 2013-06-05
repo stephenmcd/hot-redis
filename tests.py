@@ -480,6 +480,25 @@ class StringTests(unittest.TestCase):
         a = "wagwaan"
         self.assertEquals(len(a), len(String(a)))
 
+    def test_set(self):
+        a = "wagwaan hotskull"
+        b = "flute don"
+        for i in range(0, len(b)):
+            for j in range(i, len(b)):
+                c = list(a)
+                d = String(a)
+                c[i:j] = list(b)
+                d[i:j] = b
+                c = "".join(c)
+                self.assertEquals(d, c)
+
+    def test_get(self):
+        a = "wagwaan hotskull"
+        b = String(a)
+        self.assertEquals(a[4], b[4])
+        self.assertEquals(a[3:12], b[3:12])
+        self.assertEquals(a[:-5], b[:-5])
+        self.assertRaises(IndexError, lambda: b[len(b)])
 
 if __name__ == "__main__":
     unittest.main()

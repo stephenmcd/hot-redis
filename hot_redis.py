@@ -406,7 +406,7 @@ class String(Base):
         return String(self.value + self._to_value(s))
 
     def __iadd__(self, s):
-        self.append(s)
+        self.append(self._to_value(s))
         return self
 
     def __mul__(self, i):
@@ -416,7 +416,7 @@ class String(Base):
         self.string_multiply(i)
         return self
 
-    def __len__(self, value):
+    def __len__(self):
         return self.strlen()
 
     def __setitem__(self, i, value):
@@ -436,7 +436,10 @@ class String(Base):
             i = slice(i, i + 1)
         start = i.start if i.start is not None else 0
         stop = i.stop if i.stop is not None else 0
-        return self.getrange(start, stop - 1)
+        value = self.getrange(start, stop - 1)
+        if not value:
+            raise IndexError
+        return value
 
 
 class ImmutableString(String):

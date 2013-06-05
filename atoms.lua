@@ -94,6 +94,6 @@ function string_setitem()
     local s = redis.call('GET', KEYS[1])
     local start = tonumber(ARGV[1])
     local stop = tonumber(ARGV[2])
-    s = string.sub(s, 1, start) .. ARGV[3] .. string.sub(s, stop)
+    s = string.sub(s, 1, start) .. ARGV[3] .. string.sub(s, stop + 1)
     redis.call('SET', KEYS[1], s)
 end
