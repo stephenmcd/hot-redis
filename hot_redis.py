@@ -330,6 +330,8 @@ class Dict(Base):
     def setdefault(self, name, value=None):
         if self.hsetnx(name, value) == 1:
             return value
+        else:
+            return self[name]
 
     def get(self, name, default=None):
         return self.hget(name) or default
@@ -337,10 +339,12 @@ class Dict(Base):
     def __getitem__(self, name):
         value = self.get(name)
         if value is None:
-            raise KeyError
+            raise KeyError(name)
+        return value
 
     def __setitem__(self, name, value):
-        self.hset(name)
+        self.hset(name, value)
 
     def __delitem__(self, name):
-        self.hdel(name)
+        if self.hdel(name) == 0:
+            raise KeyError(name)

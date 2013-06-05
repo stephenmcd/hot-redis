@@ -362,5 +362,42 @@ class DictTests(unittest.TestCase):
         a = {"wagwaan": "popcaan", "flute": "don"}
         self.assertItemsEqual(a.items(), Dict(a).items())
 
+    def test_setdefault(self):
+        a = {"wagwaan": "popcaan", "flute": "don"}
+        b = Dict(a)
+        c = "nba"
+        d = "hangtime"
+        e = b.setdefault(c, d)
+        self.assertEquals(e, d)
+        self.assertEquals(b[c], d)
+        self.assertEquals(a.setdefault(c, d), e)
+        e = b.setdefault(c, c)
+        self.assertEquals(e, d)
+        self.assertEquals(a.setdefault(c, c), e)
+
+    def test_get(self):
+        a = {"wagwaan": "popcaan", "flute": "don"}
+        b = Dict(a)
+        self.assertEquals(a["wagwaan"], b["wagwaan"])
+        self.assertEquals(a.get("wagwaan"), b.get("wagwaan"))
+        self.assertRaises(KeyError, lambda: b["hotskull"])
+        self.assertEquals(a.get("hotskull"), b.get("hotskull"))
+        self.assertEquals(a.get("hotskull", "don"), b.get("hotskull", "don"))
+        self.assertNotEquals(a.get("hotskull", "don"), b.get("hotskull", "x"))
+
+    def test_set(self):
+        a = Dict({"wagwaan": "popcaan", "flute": "don"})
+        a["wagwaan"] = "hotskull"
+        self.assertEquals(a["wagwaan"], "hotskull")
+
+    def test_del(self):
+        a = Dict({"wagwaan": "popcaan", "flute": "don"})
+        del a["wagwaan"]
+        self.assertRaises(KeyError, lambda: a["wagwaan"])
+        def del_missing():
+            del a["hotskull"]
+        self.assertRaises(KeyError, del_missing)
+
+
 if __name__ == "__main__":
     unittest.main()
