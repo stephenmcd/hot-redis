@@ -338,10 +338,29 @@ class DictTests(unittest.TestCase):
         a = {"wagwaan": "popcaan", "flute": "don"}
         self.assertEquals(Dict(a), a)
 
+    def test_update(self):
+        a = {"wagwaan": "popcaan", "flute": "don"}
+        b = {"wagwaan": "hotskull", "nba": "hangtime"}
+        c = Dict(a)
+        a.update(b)
+        c.update(b)
+        self.assertEquals(a, c)
+
     def test_iter(self):
         a = {"wagwaan": "popcaan", "flute": "don"}
-        self.assertEquals(sorted(iter(a)), sorted(iter(Dict(a))))
+        self.assertItemsEqual(iter(a), iter(Dict(a)))
 
+    def test_keys(self):
+        a = {"wagwaan": "popcaan", "flute": "don"}
+        self.assertItemsEqual(a.keys(), Dict(a).keys())
+
+    def test_values(self):
+        a = {"wagwaan": "popcaan", "flute": "don"}
+        self.assertItemsEqual(a.values(), Dict(a).values())
+
+    def test_items(self):
+        a = {"wagwaan": "popcaan", "flute": "don"}
+        self.assertItemsEqual(a.items(), Dict(a).items())
 
 if __name__ == "__main__":
     unittest.main()

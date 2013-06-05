@@ -322,7 +322,7 @@ class Dict(Base):
         return self.hkeys()
 
     def values(self):
-        return self.values()
+        return self.hvals()
 
     def items(self):
         return self.value.items()
