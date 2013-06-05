@@ -8,52 +8,48 @@ from hot_redis import List, Set, Dict
 class ListTests(unittest.TestCase):
 
     def test_value(self):
-        a = ["4", "2", "0"]
+        a = ["wagwaan", "hot", "skull"]
         self.assertEquals(List(a), a)
 
     def test_iter(self):
-        a = ["4", "2", "0"]
+        a = ["wagwaan", "hot", "skull"]
         for i, x in enumerate(List(a)):
             self.assertEquals(x, a[i])
 
     def test_add(self):
-        a = ["4", "2", "0"]
-        b = ["6", "6", "6"]
+        a = ["wagwaan", "hot", "skull"]
+        b = ["nba", "hang", "time"]
         self.assertEquals(a + b, List(a) + List(b))
         self.assertEquals(a + b, List(a) + b)
-        #self.assertRaises(TypeError, lambda: List(a) + ["wulgus"])
 
     def test_iadd(self):
-        a = ["4", "2", "0"]
-        b = ["6", "6", "6"]
+        a = ["wagwaan", "hot", "skull"]
+        b = ["nba", "hang", "time"]
         c = List(a)
         d = List(b)
         d += c
         c += b
         self.assertEquals(a + b, c)
         self.assertEquals(b + a, d)
-        def iadd_other_type(l):
-            l += ["wulgus"]
-        #self.assertRaises(TypeError, iadd_other_type, c)
 
     def test_mul(self):
-        a = ["4", "2", "0"]
+        a = ["wagwaan", "hot", "skull"]
         i = 9000
         self.assertEquals(a * i, List(a) * i)
 
     def test_imul(self):
-        a = ["4", "2", "0"]
+        a = ["wagwaan", "hot", "skull"]
         b = List(a)
         i = 9000
         b *= i
         self.assertEquals(a * i, b)
 
     def test_len(self):
-        a = ["4", "2", "0"]
+        a = ["wagwaan", "hot", "skull"]
         self.assertEquals(len(a), len(List(a)))
 
     def test_get(self):
-        a = ["4", "2", "0"] * 10
+        a = ["wagwaan", "hot", "skull"] * 10
         b = List(a)
         self.assertEquals(a[4], b[4])
         self.assertEquals(a[3:12], b[3:12])
@@ -61,20 +57,17 @@ class ListTests(unittest.TestCase):
         self.assertRaises(IndexError, lambda: b[len(b)])
 
     def test_set(self):
-        a = ["4", "2", "0"]
+        a = ["wagwaan", "hot", "skull"]
         b = List(a)
-        i = "9000"
+        i = "popcaan"
         a[1] = i
         self.assertNotEquals(a, b)
         b[1] = i
         self.assertEquals(a, b)
-        def set_other_type(l):
-            l[1] = "wulgus"
-        #self.assertRaises(TypeError, set_other_type, b)
         # todo: slice
 
     def test_del(self):
-        a = ["4", "2", "0"]
+        a = ["wagwaan", "hot", "skull"]
         b = List(a)
         del a[1]
         self.assertNotEquals(a, b)
@@ -83,34 +76,31 @@ class ListTests(unittest.TestCase):
         # todo: slice?
 
     def test_extend(self):
-        a = ["4", "2", "0"]
-        b = ["6", "6", "6"]
+        a = ["wagwaan", "hot", "skull"]
+        b = ["nba", "hang", "time"]
         c = List(a)
         a.extend(b)
         c.extend(b)
         self.assertEquals(a, c)
-        #self.assertRaises(TypeError, lambda: c.extend(["wulgus"]))
 
     def test_append(self):
-        a = ["4", "2", "0"]
+        a = ["wagwaan", "hot", "skull"]
         b = List(a)
-        i = "9000"
+        i = "popcaan"
         a.append(i)
         b.append(i)
         self.assertEquals(a, b)
-        #self.assertRaises(TypeError, lambda: b.append("wulgus"))
 
     def test_insert(self):
-        a = ["4", "2", "0"]
+        a = ["wagwaan", "hot", "skull"]
         b = List(a)
-        i = "9000"
+        i = "popcaan"
         a.insert(1, i)
         b.insert(1, i)
         self.assertEquals(a, b)
-        #self.assertRaises(TypeError, lambda: b.insert(1, "wulgus"))
 
     def test_pop(self):
-        a = ["4", "2", "0"] * 10
+        a = ["wagwaan", "hot", "skull"] * 10
         b = List(a)
         a.pop()
         b.pop()
@@ -126,27 +116,27 @@ class ListTests(unittest.TestCase):
         self.assertEquals(a, b)
 
     def test_reverse(self):
-        a = ["4", "2", "0"]
+        a = ["wagwaan", "hot", "skull"]
         b = List(a)
         a.reverse()
         b.reverse()
         self.assertEquals(a, b)
 
     def test_index(self):
-        a = ["4", "2", "0"] * 10
+        a = ["wagwaan", "hot", "skull"] * 10
         b = List(a)
-        c = "2"
+        c = "wagwaan"
         self.assertEquals(a.index(c), b.index(c))
-        self.assertRaises(ValueError, lambda: b.index("9000"))
+        self.assertRaises(ValueError, lambda: b.index("popcaan"))
 
     def test_count(self):
-        a = ["4", "2", "0"] * 10
+        a = ["wagwaan", "hot", "skull"] * 10
         b = List(a)
-        self.assertEquals(a.count(2), b.count(2))
-        self.assertEquals(a.count("9000"), b.count("9000"))
+        self.assertEquals(a.count("wagwaan"), b.count("wagwaan"))
+        self.assertEquals(a.count("popcaan"), b.count("popcaan"))
 
     def test_sort(self):
-        a = ["4", "2", "0"] * 10
+        a = ["wagwaan", "hot", "skull"] * 10
         b = List(a)
         a.sort()
         b.sort()
@@ -159,74 +149,70 @@ class ListTests(unittest.TestCase):
 class SetTests(unittest.TestCase):
 
     def test_value(self):
-        a = set(["4", "2", "0"])
+        a = set(["wagwaan", "hot", "skull"])
         self.assertEquals(Set(a), a)
 
     def test_add(self):
-        a = set(["4", "2", "0"])
+        a = set(["wagwaan", "hot", "skull"])
         b = Set(a)
-        i = "9000"
+        i = "popcaan"
         a.add(i)
         b.add(i)
         self.assertEquals(b, a)
-        #self.assertRaises(TypeError, lambda: b.add("wulgus"))
 
     def test_update(self):
-        a = set(["4", "2", "0"])
-        b = set(["6", "6", "6"])
-        c = set(["0", "6", "9"])
+        a = set(["wagwaan", "hot", "skull"])
+        b = set(["nba", "hang", "time"])
+        c = set(["rap", "dot", "mom"])
         d = Set(a)
         a.update(b, c)
         d.update(b, c)
         self.assertEquals(d, a)
-        #self.assertRaises(TypeError, lambda: d.update(set(["wulgus"])))
 
     def test_pop(self):
-        a = Set(["4", "2", "0"])
+        a = Set(["wagwaan", "hot", "skull"])
         i = len(a)
         b = a.pop()
         self.assertEquals(len(a), i - 1)
         self.assertNotIn(b, a)
 
     def test_clear(self):
-        a = Set(["4", "2", "0"])
+        a = Set(["wagwaan", "hot", "skull"])
         a.clear()
         self.assertEquals(len(a), 0)
 
     def test_remove(self):
-        a = Set(["4", "2", "0"])
+        a = Set(["wagwaan", "hot", "skull"])
         i = len(a)
-        b = "4"
+        b = "wagwaan"
         a.remove(b)
         self.assertEquals(len(a), i - 1)
         self.assertNotIn(b, a)
-        #self.assertRaises(TypeError, lambda: a.remove("wulgus"))
-        self.assertRaises(KeyError, lambda: a.remove("9000"))
+        self.assertRaises(KeyError, lambda: a.remove("popcaan"))
 
     def test_discard(self):
-        a = Set(["4", "2", "0"])
+        a = Set(["wagwaan", "hot", "skull"])
         i = len(a)
-        b = "4"
+        b = "wagwaan"
         a.discard(b)
         self.assertEquals(len(a), i - 1)
         self.assertNotIn(b, a)
-        #self.assertRaises(TypeError, lambda: a.discard("wulgus"))
-        self.assertEquals(a.discard("9000"), None)
+        self.assertEquals(a.discard("popcaan"), None)
 
     def test_len(self):
-        a = set(["4", "2", "0"])
+        a = set(["wagwaan", "hot", "skull"])
         b = Set(a)
         self.assertEquals(len(a), len(b))
 
     def test_contains(self):
-        a = Set(["4", "2", "0"])
-        self.assertIn(4, a)
-        self.assertNotIn("9000", a)
+        a = Set(["wagwaan", "hot", "skull"])
+        self.assertIn("wagwaan", a)
+        self.assertNotIn("popcaan", a)
 
     def test_intersection(self):
-        a = set(["4", "2", "0"])
-        b = set(["4", "2", "1"])
-        c = set(["4", "2", "2"])
+        a = set(["wagwaan", "hot", "skull"])
+        b = set(["wagwaan", "flute", "don"])
+        c = set(["wagwaan", "worldstar", "hiphop"])
         d = Set(a)
         e = a.intersection(b, c)
         self.assertEquals(a.intersection(b), d.intersection(b))
@@ -236,9 +222,9 @@ class SetTests(unittest.TestCase):
         self.assertEquals(e, d.intersection(Set(b), Set(c)))
 
     def test_intersection_update(self):
-        a = set(["4", "2", "0"])
-        b = set(["4", "2", "1"])
-        c = set(["4", "2", "2"])
+        a = set(["wagwaan", "hot", "skull"])
+        b = set(["wagwaan", "flute", "don"])
+        c = set(["wagwaan", "worldstar", "hiphop"])
         d = a.copy()
         d.intersection_update(b)
         e = Set(a)
@@ -260,9 +246,9 @@ class SetTests(unittest.TestCase):
         self.assertEquals(e, d)
 
     def test_difference(self):
-        a = set(["4", "2", "0"])
-        b = set(["4", "2", "1"])
-        c = set(["4", "2", "2"])
+        a = set(["wagwaan", "hot", "skull"])
+        b = set(["wagwaan", "flute", "don"])
+        c = set(["wagwaan", "worldstar", "hiphop"])
         d = Set(a)
         e = a.difference(b, c)
         self.assertEquals(a.difference(b), d.difference(b))
@@ -272,9 +258,9 @@ class SetTests(unittest.TestCase):
         self.assertEquals(e, d.difference(Set(b), Set(c)))
 
     def test_difference_update(self):
-        a = set(["4", "2", "0"])
-        b = set(["4", "2", "1"])
-        c = set(["4", "2", "2"])
+        a = set(["wagwaan", "hot", "skull"])
+        b = set(["wagwaan", "flute", "don"])
+        c = set(["wagwaan", "worldstar", "hiphop"])
         d = a.copy()
         d.difference_update(b)
         e = Set(a)
@@ -296,8 +282,8 @@ class SetTests(unittest.TestCase):
         self.assertEquals(e, d)
 
     def test_symmetric_difference(self):
-        a = set(["4", "2", "0"])
-        b = set(["4", "2", "1"])
+        a = set(["wagwaan", "hot", "skull"])
+        b = set(["wagwaan", "flute", "don"])
         c = Set(a)
         d = a.symmetric_difference(b)
         self.assertEquals(d, c.symmetric_difference(b))
@@ -305,8 +291,8 @@ class SetTests(unittest.TestCase):
         self.assertEquals(d, a.symmetric_difference(Set(b)))
 
     def test_symmetric_difference_update(self):
-        a = set(["4", "2", "0"])
-        b = set(["4", "2", "1"])
+        a = set(["wagwaan", "hot", "skull"])
+        b = set(["wagwaan", "flute", "don"])
         c = a.copy()
         c.difference_update(b)
         d = Set(a)
@@ -317,10 +303,10 @@ class SetTests(unittest.TestCase):
         self.assertEquals(d, c)
 
     def test_disjoint(self):
-        a = set(["4", "2", "0"])
+        a = set(["wagwaan", "hot", "skull"])
         b = Set(a)
-        c = Set(["4", "2", "1"])
-        d = set(["6", "6", "6"])
+        c = Set(["wagwaan", "flute", "don"])
+        d = set(["nba", "hang", "time"])
         e = Set(d)
         self.assertFalse(b.isdisjoint(a))
         self.assertFalse(b.isdisjoint(c))
@@ -328,8 +314,8 @@ class SetTests(unittest.TestCase):
         self.assertTrue(b.isdisjoint(e))
 
     def test_cmp(self):
-        a = set(["4", "2", "0"])
-        b = set(["6", "6", "6"])
+        a = set(["wagwaan", "hot", "skull"])
+        b = set(["nba", "hang", "time"])
         c = Set(a)
         d = Set(b)
         self.assertEquals(a > b, c > d)
@@ -349,13 +335,13 @@ class SetTests(unittest.TestCase):
 class DictTests(unittest.TestCase):
 
     def test_value(self):
-        a = {4: 20, 6: 66}
+        a = {"wagwaan": "popcaan", "flute": "don"}
         self.assertEquals(Dict(a), a)
 
-    # def test_iter(self):
-    #     a = ["4", "2", "0"]
-    #     for i, x in enumerate(List(a)):
-    #         self.assertEquals(x, a[i])
+    def test_iter(self):
+        a = {"wagwaan": "popcaan", "flute": "don"}
+        self.assertEquals(sorted(iter(a)), sorted(iter(Dict(a))))
+
 
 if __name__ == "__main__":
     unittest.main()

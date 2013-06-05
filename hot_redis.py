@@ -149,7 +149,7 @@ class List(Base):
         return self.value.count(value)
 
     def sort(self, reverse=False):
-        self._proxy("sort")(desc=reverse, store=self.key)
+        self._proxy("sort")(desc=reverse, store=self.key, alpha=True)
 
 
 class Set(Base):
@@ -316,8 +316,6 @@ class Dict(Base):
             self.update(value)
 
     def update(self, value):
-        # if value:
-        #     self._check_type(value.values()[0])
         self.hmset(value)
 
     def keys(self):
