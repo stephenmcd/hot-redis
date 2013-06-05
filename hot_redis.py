@@ -28,9 +28,6 @@ class Base(object):
         if value:
             self.value = value
 
-    def __del__(self):
-        self.delete()
-
     def _proxy(self, name):
         try:
             func = getattr(_redis, name)
@@ -75,6 +72,9 @@ class Base(object):
     def __ge__(self, value):
         return self.value >= self._to_value(value)
 
+    def __del__(self):
+        self.delete()
+
 
 class List(Base):
 
@@ -103,6 +103,12 @@ class List(Base):
     def __len__(self):
         return self.llen()
 
+    def __setitem__(self, i, value):
+        try:
+            self.lset(i, value)
+        except ResponseError:
+            raise IndexError
+
     def __getitem__(self, i):
         if isinstance(i, slice):
             start = i.start if i.start is not None else 0
@@ -112,12 +118,6 @@ class List(Base):
         if item is None:
             raise IndexError
         return item
-
-    def __setitem__(self, i, value):
-        try:
-            self.lset(i, value)
-        except ResponseError:
-            raise IndexError
 
     def __delitem__(self, i):
         self.pop(i)
@@ -315,6 +315,28 @@ class Dict(Base):
         if value:
             self.update(value)
 
+    def __len__(self):
+        return self.hlen()
+
+    def __contains__(self, name):
+        return self.hexists(name)
+
+    def __iter__(self):
+        return self.iterkeys()
+
+    def __setitem__(self, name, value):
+        self.hset(name, value)
+
+    def __getitem__(self, name):
+        value = self.get(name)
+        if value is None:
+            raise KeyError(name)
+        return value
+
+    def __delitem__(self, name):
+        if self.hdel(name) == 0:
+            raise KeyError(name)
+
     def update(self, value):
         self.hmset(value)
 
@@ -327,6 +349,15 @@ class Dict(Base):
     def items(self):
         return self.value.items()
 
+    def iterkeys(self):
+        return iter(self.keys())
+
+    def itervalues(self):
+        return iter(self.values())
+
+    def iteritems(self):
+        return iter(self.items())
+
     def setdefault(self, name, value=None):
         if self.hsetnx(name, value) == 1:
             return value
@@ -334,23 +365,20 @@ class Dict(Base):
             return self[name]
 
     def get(self, name, default=None):
-        return self.hget(name) or default
+        value = self.hget(name)
+        return value if value is not None else default
 
-    def __getitem__(self, name):
-        value = self.get(name)
-        if value is None:
-            raise KeyError(name)
-        return value
+    def has_key(self, name):
+        return name in self
 
-    def __setitem__(self, name, value):
-        self.hset(name, value)
+    def copy(self):
+        return Dict(self.value)
 
-    def __delitem__(self, name):
-        if self.hdel(name) == 0:
-            raise KeyError(name)
+    def clear(self):
+        self.delete()
 
-    def __len__(self):
-        return self.hlen()
-
-    def __contains__(self, name):
-        return self.hexists(name)
+    @classmethod
+    def fromkeys(cls, *args):
+        if len(args) == 1:
+            args += ("",)
+        return cls({}.fromkeys(*args))

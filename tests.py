@@ -420,6 +420,27 @@ class DictTests(unittest.TestCase):
         self.assertIn("wagwaan", a)
         self.assertNotIn("hotskull", a)
 
+    def test_copy(self):
+        a = Dict({"wagwaan": "popcaan", "flute": "don"})
+        b = a.copy()
+        self.assertEquals(type(a), type(b))
+        self.assertNotEquals(a.key, b.key)
+
+    def test_clear(self):
+        a = Dict({"wagwaan": "popcaan", "flute": "don"})
+        a.clear()
+        self.assertEquals(len(a), 0)
+
+    def test_fromkeys(self):
+        a = ["wagwaan", "hot", "skull"]
+        b = "popcaan"
+        c = Dict.fromkeys(a)
+        self.assertItemsEqual(a, c.keys())
+        ccc = c
+        self.assertFalse(c["wagwaan"])
+        c = Dict.fromkeys(a, b)
+        self.assertEquals(c["wagwaan"], b)
+
 
 if __name__ == "__main__":
     unittest.main()
