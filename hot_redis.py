@@ -453,3 +453,23 @@ class ImmutableString(String):
 
     def __setitem__(self, i):
         raise TypeError
+
+
+class Int(Base):
+
+    @property
+    def value(self):
+        return int(self.get())
+
+    @value.setter
+    def value(self, value):
+        if value:
+            self.set(value)
+
+    def __iadd__(self, i):
+        self.incr(i)
+        return self
+
+    def __isub__(self, i):
+        self.decr(i)
+        return self
