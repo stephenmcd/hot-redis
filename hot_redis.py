@@ -50,7 +50,7 @@ class Base(object):
         raise AttributeError(name)
 
     def _to_value(self, value):
-        if type(value) == type(self):
+        if isinstance(value, self.__class__):
             return value.value
         return value
 
@@ -94,14 +94,14 @@ class List(Base):
         self.extend(value)
 
     def __add__(self, l):
-        return List(self.value + self._to_value(l))
+        return self.__class__(self.value + self._to_value(l))
 
     def __iadd__(self, l):
         self.extend(self._to_value(l))
         return self
 
     def __mul__(self, i):
-        return List(self.value * i)
+        return self.__class__(self.value * i)
 
     def __imul__(self, i):
         self.list_multiply(i)
@@ -170,10 +170,11 @@ class Set(Base):
         self.update(value)
 
     def _all_redis(self, values):
-        return all([isinstance(value, Set) for value in values])
+        return all([isinstance(value, self.__class__) for value in values])
 
     def _rop(self, op, value):
-        return op(value, self if isinstance(value, Set) else self.value)
+        right = self if isinstance(value, self.__class__) else self.value
+        return op(value, right)
 
     def _to_keys(self, values):
         return [value.key for value in values]
@@ -284,13 +285,13 @@ class Set(Base):
         return self._rop(xor, value)
 
     def symmetric_difference(self, value):
-        if isinstance(value, Set):
+        if isinstance(value, self.__class__):
             return set(self.set_symmetric_difference("return", value.key))
         else:
             return self.value ^ value
 
     def symmetric_difference_update(self, value):
-        if isinstance(value, Set):
+        if isinstance(value, self.__class__):
             self.set_symmetric_difference("update", value.key)
         else:
             self.set_symmetric_difference("create", *value)
@@ -379,7 +380,7 @@ class Dict(Base):
         return name in self
 
     def copy(self):
-        return Dict(self.value)
+        return self.__class__(self.value)
 
     def clear(self):
         self.delete()
@@ -403,14 +404,14 @@ class String(Base):
             self.set(value)
 
     def __add__(self, s):
-        return String(self.value + self._to_value(s))
+        return self.__class__(self.value + self._to_value(s))
 
     def __iadd__(self, s):
         self.append(self._to_value(s))
         return self
 
     def __mul__(self, i):
-        return String(self.value * i)
+        return self.__class__(self.value * i)
 
     def __imul__(self, i):
         self.string_multiply(i)
@@ -445,10 +446,10 @@ class String(Base):
 class ImmutableString(String):
 
     def __iadd__(self, s):
-        return self.__add__(s)
+        return self + s
 
-    def __imul__(self, s):
-        return self.__mul__(s)
+    def __imul__(self, i):
+        return self * i
 
     def __setitem__(self, i):
         raise TypeError
