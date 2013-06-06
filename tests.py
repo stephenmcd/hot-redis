@@ -2,7 +2,7 @@
 
 import unittest
 
-from hot_redis import Base, List, Set, Dict, String, _redis
+from hot_redis import Base, List, Set, Dict, String, ImmutableString, _redis
 
 
 KEYS = []
@@ -516,6 +516,34 @@ class StringTests(BaseTestCase):
         self.assertEquals(a[3:12], b[3:12])
         self.assertEquals(a[:-5], b[:-5])
         self.assertRaises(IndexError, lambda: b[len(b)])
+
+    def test_mutability(self):
+        a = "wagwaan hotskull"
+        b = "flute don"
+        c = String(a)
+        d = ImmutableString(a)
+        keyC = c.key
+        keyD = d.key
+        a += b
+        c += b
+        d += b
+        self.assertEquals(a, c)
+        self.assertEquals(a, d)
+        self.assertEquals(c.key, keyC)
+        self.assertNotEquals(d.key, keyD)
+        keyD = d.key
+        i = 9000
+        a *= i
+        c *= i
+        d *= i
+        self.assertEquals(a, c)
+        self.assertEquals(a, d)
+        self.assertEquals(c.key, keyC)
+        self.assertNotEquals(d.key, keyD)
+        def immutable_set():
+            d[0] = b
+        self.assertRaises(TypeError, immutable_set)
+
 
 
 if __name__ == "__main__":
