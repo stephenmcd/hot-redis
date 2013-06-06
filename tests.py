@@ -2,10 +2,27 @@
 
 import unittest
 
-from hot_redis import List, Set, Dict, String
+from hot_redis import Base, List, Set, Dict, String, _redis
 
 
-class ListTests(unittest.TestCase):
+KEYS = []
+
+def base_wrapper(init):
+    def wrapper(*args, **kwargs):
+        init(*args, **kwargs)
+        KEYS.append(args[0].key)
+    return wrapper
+
+Base.__init__ = base_wrapper(Base.__init__)
+
+
+class BaseTestCase(unittest.TestCase):
+    def tearDown(self):
+        while KEYS:
+            _redis.delete(KEYS.pop())
+
+
+class ListTests(BaseTestCase):
 
     def test_value(self):
         a = ["wagwaan", "hot", "skull"]
@@ -157,7 +174,7 @@ class ListTests(unittest.TestCase):
         self.assertEquals(a, b)
 
 
-class SetTests(unittest.TestCase):
+class SetTests(BaseTestCase):
 
     def test_value(self):
         a = set(["wagwaan", "hot", "skull"])
@@ -343,7 +360,7 @@ class SetTests(unittest.TestCase):
         self.assertEquals(a.issuperset(b), c.issuperset(b))
 
 
-class DictTests(unittest.TestCase):
+class DictTests(BaseTestCase):
 
     def test_value(self):
         a = {"wagwaan": "popcaan", "flute": "don"}
@@ -442,7 +459,7 @@ class DictTests(unittest.TestCase):
         self.assertEquals(c["wagwaan"], b)
 
 
-class StringTests(unittest.TestCase):
+class StringTests(BaseTestCase):
 
     def test_value(self):
         a = "wagwaan"
@@ -499,6 +516,7 @@ class StringTests(unittest.TestCase):
         self.assertEquals(a[3:12], b[3:12])
         self.assertEquals(a[:-5], b[:-5])
         self.assertRaises(IndexError, lambda: b[len(b)])
+
 
 if __name__ == "__main__":
     unittest.main()
