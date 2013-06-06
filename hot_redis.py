@@ -1,14 +1,13 @@
 
-from operator import and_, or_, sub, xor
-from uuid import uuid4
-from redis import Redis
-from redis.exceptions import ResponseError
+import operator
+import uuid
+import redis
 
 
-_redis = Redis()
-_lua_scripts = {}
+client = redis.Redis()
+lua_scripts = {}
 
-def _load_lua_scripts():
+def load_lua_scripts():
     with open("atoms.lua", "r") as f:
         for func in f.read().strip().split("function "):
             if not func:
@@ -16,27 +15,27 @@ def _load_lua_scripts():
             name, code = func.split("\n", 1)
             name = name.split("(")[0].strip()
             code = code.rsplit("end", 1)[0].strip()
-            _lua_scripts[name] = _redis.register_script(code)
+            lua_scripts[name] = client.register_script(code)
 
-_load_lua_scripts()
+load_lua_scripts()
 
 
 class Base(object):
 
     def __init__(self, value=None, key=None):
-        self.key = key or str(uuid4())
+        self.key = key or str(uuid.uuid4())
         if value:
             self.value = value
 
-    def _proxy(self, name):
+    def _dispatch(self, name):
         try:
-            func = getattr(_redis, name)
+            func = getattr(client, name)
         except AttributeError:
             pass
         else:
             return lambda *a, **k: func(self.key, *a, **k)
         try:
-            func = _lua_scripts[name]
+            func = lua_scripts[name]
         except KeyError:
             pass
         else:
@@ -54,36 +53,133 @@ class Base(object):
             return value.value
         return value
 
+    def _op(self, op, value):
+        return op(self.value, self._to_value(value))
+
+    def _rop(self, op, value):
+        right = self if isinstance(value, self.__class__) else self.value
+        return op(value, right)
+
     def __getattr__(self, name):
-        return self._proxy(name)
+        return self._dispatch(name)
 
     def __repr__(self):
         value = repr(self.value)
         return "%s(%s, '%s')" % (self.__class__.__name__, value, self.key)
 
-    def __eq__(self, value):
-        return self.value == self._to_value(value)
-
     def __iter__(self):
         return iter(self.value)
-
-    def __lt__(self, value):
-        return self.value < self._to_value(value)
-
-    def __le__(self, value):
-        return self.value <= self._to_value(value)
-
-    def __gt__(self, value):
-        return self.value > self._to_value(value)
-
-    def __ge__(self, value):
-        return self.value >= self._to_value(value)
 
     def __del__(self):
         self.delete()
 
+    def __eq__(self, value):
+        return self._op(operator.eq, value)
 
-class List(Base):
+    def __lt__(self, value):
+        return self._op(operator.lt, value)
+
+    def __le__(self, value):
+        return self._op(operator.le, value)
+
+    def __gt__(self, value):
+        return self._op(operator.gt, value)
+
+    def __ge__(self, value):
+        return self._op(operator.ge, value)
+
+
+class Commutative(Base):
+
+    def __add__(self, value):
+        return self._op(operator.add, value)
+
+    def __radd__(self, value):
+        return self._rop(operator.add, value)
+
+    def __mul__(self, value):
+        return self._op(operator.mul, value)
+
+    def __rmul__(self, value):
+        return self._rop(operator.mul, value)
+
+
+class Arithemtic(Commutative):
+
+    def __add__(self, i):
+        return self._op(operator.add, i)
+
+    def __radd__(self, i):
+        return self._rop(operator.add, i)
+
+    def __mul__(self, i):
+        return self._op(operator.mul, i)
+
+    def __rmul__(self, i):
+        return self._rop(operator.mul, i)
+
+    def __sub__(self, i):
+        return self._op(operator.sub, i)
+
+    def __rsub__(self, i):
+        return self._rop(operator.sub, i)
+
+    def __floordiv__(self, i):
+        return self._op(operator.floordiv, i)
+
+    def __rfloordiv__(self, i):
+        return self._rop(operator.floordiv, i)
+
+    def __mod__(self, i):
+        return self._op(operator.mod, i)
+
+    def __rmod__(self, i):
+        return self._rop(operator.mod, i)
+
+    def __divmod__(self, i):
+        return self._op(operator.divmod, i)
+
+    def __rdivmod__(self, i):
+        return self._rop(operator.divmod, i)
+
+    def __pow__(self, value, modulo):
+        return self._op(operator.pow, i)
+
+    def __rpow__(self, value, modulo):
+        return self._rop(operator.pow, i)
+
+    def __lshift__(self, i):
+        return self._op(operator.lshift, i)
+
+    def __rlshift__(self, i):
+        return self._rop(operator.lshift, i)
+
+    def __rshift__(self, i):
+        return self._op(operator.rshift, i)
+
+    def __rrshift__(self, i):
+        return self._rop(operator.rshift, i)
+
+    def __and__(self, i):
+        return self._op(operator.and_, i)
+
+    def __rand__(self, i):
+        return self._rop(operator.and_, i)
+
+    def __xor__(self, i):
+        return self._op(operator.xor, i)
+
+    def __rxor__(self, i):
+        return self._rop(operator.xor, i)
+
+    def __or__(self, i):
+        return self._op(operator.or_, i)
+
+    def __ror__(self, i):
+        return self._rop(operator.or_, i)
+
+
+class List(Commutative):
 
     @property
     def value(self):
@@ -93,15 +189,9 @@ class List(Base):
     def value(self, value):
         self.extend(value)
 
-    def __add__(self, l):
-        return self.__class__(self.value + self._to_value(l))
-
     def __iadd__(self, l):
         self.extend(self._to_value(l))
         return self
-
-    def __mul__(self, i):
-        return self.__class__(self.value * i)
 
     def __imul__(self, i):
         self.list_multiply(i)
@@ -113,7 +203,7 @@ class List(Base):
     def __setitem__(self, i, value):
         try:
             self.lset(i, value)
-        except ResponseError:
+        except redis.exceptions.ResponseError:
             raise IndexError
 
     def __getitem__(self, i):
@@ -156,7 +246,7 @@ class List(Base):
         return self.value.count(value)
 
     def sort(self, reverse=False):
-        self._proxy("sort")(desc=reverse, store=self.key, alpha=True)
+        self._dispatch("sort")(desc=reverse, store=self.key, alpha=True)
 
 
 class Set(Base):
@@ -172,10 +262,6 @@ class Set(Base):
     def _all_redis(self, values):
         return all([isinstance(value, self.__class__) for value in values])
 
-    def _rop(self, op, value):
-        right = self if isinstance(value, self.__class__) else self.value
-        return op(value, right)
-
     def _to_keys(self, values):
         return [value.key for value in values]
 
@@ -183,7 +269,7 @@ class Set(Base):
         self.update([value])
 
     def update(self, *values):
-        self.sadd(*reduce(or_, values))
+        self.sadd(*reduce(operator.or_, values))
 
     def pop(self):
         return self.spop()
@@ -215,19 +301,19 @@ class Set(Base):
         return self
 
     def __rand__(self, value):
-        return self._rop(and_, value)
+        return self._rop(operator.and_, value)
 
     def intersection(self, *values):
         if self._all_redis(values):
             return self.sinter(*self._to_keys(values))
         else:
-            return reduce(and_, (self.value,) + values)
+            return reduce(operator.and_, (self.value,) + values)
 
     def intersection_update(self, *values):
         if self._all_redis(values):
             self.sinterstore(self.key, *self._to_keys(values))
         else:
-            values = list(reduce(and_, values))
+            values = list(reduce(operator.and_, values))
             self.set_intersection_update(*values)
         return self
 
@@ -239,13 +325,13 @@ class Set(Base):
         return self
 
     def __ror__(self, value):
-        return self._rop(or_, value)
+        return self._rop(operator.or_, value)
 
     def union(self, *values):
         if self._all_redis(values):
             return self.sunion(*self._to_keys(values))
         else:
-            return reduce(or_, (self.value,) + values)
+            return reduce(operator.or_, (self.value,) + values)
 
     def __sub__(self, value):
         return self.difference(value)
@@ -255,19 +341,19 @@ class Set(Base):
         return self
 
     def __rsub__(self, value):
-        return self._rop(sub, value)
+        return self._rop(operator.sub, value)
 
     def difference(self, *values):
         if self._all_redis(values):
             return self.sdiff(*self._to_keys(values))
         else:
-            return reduce(sub, (self.value,) + values)
+            return reduce(operator.sub, (self.value,) + values)
 
     def difference_update(self, *values):
         if self._all_redis(values):
             self.sdiffstore(self.key, *self._to_keys(values))
         else:
-            all_values = [str(uuid4())]
+            all_values = [str(uuid.uuid4())]
             for value in values:
                 all_values.extend(value)
                 all_values.append(all_values[0])
@@ -282,7 +368,7 @@ class Set(Base):
         return self
 
     def __rxor__(self, value):
-        return self._rop(xor, value)
+        return self._rop(operator.xor, value)
 
     def symmetric_difference(self, value):
         if isinstance(value, self.__class__):
@@ -392,7 +478,7 @@ class Dict(Base):
         return cls({}.fromkeys(*args))
 
 
-class String(Base):
+class String(Commutative):
 
     @property
     def value(self):
@@ -403,15 +489,9 @@ class String(Base):
         if value:
             self.set(value)
 
-    def __add__(self, s):
-        return self.__class__(self.value + self._to_value(s))
-
     def __iadd__(self, s):
         self.append(self._to_value(s))
         return self
-
-    def __mul__(self, i):
-        return self.__class__(self.value * i)
 
     def __imul__(self, i):
         self.string_multiply(i)
@@ -466,10 +546,20 @@ class Int(Base):
         if value:
             self.set(value)
 
-    def __iadd__(self, i):
-        self.incr(i)
-        return self
+
 
     def __isub__(self, i):
         self.decr(i)
         return self
+
+
+    def __iadd__(self, i):
+        self.incr(i)
+        return self
+
+
+    def __imul__(self, i):
+        return self
+
+
+
