@@ -20,22 +20,48 @@ def load_lua_scripts():
 load_lua_scripts()
 
 
+value_left  = lambda a, b: b.value if isinstance(b, a.__class__) else b
+value_right = lambda a, b: a if isinstance(b, a.__class__) else a.value
+op_left     = lambda op: lambda a, b: op(a.value, value_left(a, b))
+op_right    = lambda op: lambda a, b: op(value_left(a, b), value_right(a, b))
+
+
 class Comparative(object):
+    __eq__        = op_left(operator.eq)
+    __lt__        = op_left(operator.lt)
+    __le__        = op_left(operator.le)
+    __gt__        = op_left(operator.gt)
+    __ge__        = op_left(operator.ge)
 
-    def __eq__(self, value):
-        return self._op(operator.eq, value)
+class Binary(object):
+    __and__       = op_left(operator.and_)
+    __rand__      = op_right(operator.and_)
+    __or__        = op_left(operator.or_)
+    __ror__       = op_right(operator.or_)
+    __xor__       = op_left(operator.xor)
+    __rxor__      = op_right(operator.xor)
 
-    def __lt__(self, value):
-        return self._op(operator.lt, value)
+class Commutative(object):
+    __add__       = op_left(operator.add)
+    __radd__      = op_right(operator.add)
+    __mul__       = op_left(operator.mul)
+    __rmul__      = op_right(operator.mul)
 
-    def __le__(self, value):
-        return self._op(operator.le, value)
-
-    def __gt__(self, value):
-        return self._op(operator.gt, value)
-
-    def __ge__(self, value):
-        return self._op(operator.ge, value)
+class Arithemtic(Binary, Commutative):
+    __sub__       = op_left(operator.sub)
+    __rsub__      = op_right(operator.sub)
+    __floordiv__  = op_left(operator.floordiv)
+    __rfloordiv__ = op_right(operator.floordiv)
+    __mod__       = op_left(operator.mod)
+    __rmod__      = op_right(operator.mod)
+    __divmod__    = op_left(divmod)
+    __rdivmod__   = op_right(divmod)
+    __pow__       = op_left(operator.pow)
+    __rpow__      = op_right(operator.pow)
+    __lshift__    = op_left(operator.lshift)
+    __rlshift__   = op_right(operator.lshift)
+    __rshift__    = op_left(operator.rshift)
+    __rrshift__   = op_right(operator.rshift)
 
 
 class Base(Comparative):
@@ -66,18 +92,6 @@ class Base(Comparative):
             return func
         raise AttributeError(name)
 
-    def _to_value(self, value):
-        if isinstance(value, self.__class__):
-            return value.value
-        return value
-
-    def _op(self, op, value):
-        return op(self.value, self._to_value(value))
-
-    def _rop(self, op, value):
-        right = self if isinstance(value, self.__class__) else self.value
-        return op(value, right)
-
     def __getattr__(self, name):
         return self._dispatch(name)
 
@@ -87,87 +101,6 @@ class Base(Comparative):
 
     def __iter__(self):
         return iter(self.value)
-
-
-class Binary(object):
-
-    def __and__(self, i):
-        return self._op(operator.and_, i)
-
-    def __rand__(self, i):
-        return self._rop(operator.and_, i)
-
-    def __xor__(self, i):
-        return self._op(operator.xor, i)
-
-    def __rxor__(self, i):
-        return self._rop(operator.xor, i)
-
-    def __or__(self, i):
-        return self._op(operator.or_, i)
-
-    def __ror__(self, i):
-        return self._rop(operator.or_, i)
-
-
-class Commutative(object):
-
-    def __add__(self, value):
-        return self._op(operator.add, value)
-
-    def __radd__(self, value):
-        return self._rop(operator.add, value)
-
-    def __mul__(self, value):
-        return self._op(operator.mul, value)
-
-    def __rmul__(self, value):
-        return self._rop(operator.mul, value)
-
-
-class Arithemtic(Binary, Commutative):
-
-    def __sub__(self, i):
-        return self._op(operator.sub, i)
-
-    def __rsub__(self, i):
-        return self._rop(operator.sub, i)
-
-    def __floordiv__(self, i):
-        return self._op(operator.floordiv, i)
-
-    def __rfloordiv__(self, i):
-        return self._rop(operator.floordiv, i)
-
-    def __mod__(self, i):
-        return self._op(operator.mod, i)
-
-    def __rmod__(self, i):
-        return self._rop(operator.mod, i)
-
-    def __divmod__(self, i):
-        return self._op(operator.divmod, i)
-
-    def __rdivmod__(self, i):
-        return self._rop(operator.divmod, i)
-
-    def __pow__(self, value, modulo):
-        return self._op(operator.pow, i)
-
-    def __rpow__(self, value, modulo):
-        return self._rop(operator.pow, i)
-
-    def __lshift__(self, i):
-        return self._op(operator.lshift, i)
-
-    def __rlshift__(self, i):
-        return self._rop(operator.lshift, i)
-
-    def __rshift__(self, i):
-        return self._op(operator.rshift, i)
-
-    def __rrshift__(self, i):
-        return self._rop(operator.rshift, i)
 
 
 class List(Base, Commutative):
@@ -181,7 +114,7 @@ class List(Base, Commutative):
         self.extend(value)
 
     def __iadd__(self, l):
-        self.extend(self._to_value(l))
+        self.extend(value_left(self, l))
         return self
 
     def __imul__(self, i):
@@ -284,8 +217,7 @@ class Set(Base, Binary):
         self.difference_update(value)
         return self
 
-    def __rsub__(self, i):
-        return self._rop(operator.sub, i)
+    __rsub__ = op_right(operator.sub)
 
     def __len__(self):
         return self.scard()
@@ -472,7 +404,7 @@ class String(Base, Commutative):
             self.set(value)
 
     def __iadd__(self, s):
-        self.append(self._to_value(s))
+        self.append(value_left(self, s))
         return self
 
     def __imul__(self, i):
