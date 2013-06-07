@@ -20,7 +20,25 @@ def load_lua_scripts():
 load_lua_scripts()
 
 
-class Base(object):
+class Comparative(object):
+
+    def __eq__(self, value):
+        return self._op(operator.eq, value)
+
+    def __lt__(self, value):
+        return self._op(operator.lt, value)
+
+    def __le__(self, value):
+        return self._op(operator.le, value)
+
+    def __gt__(self, value):
+        return self._op(operator.gt, value)
+
+    def __ge__(self, value):
+        return self._op(operator.ge, value)
+
+
+class Base(Comparative):
 
     def __init__(self, value=None, key=None):
         self.key = key or str(uuid.uuid4())
@@ -70,26 +88,29 @@ class Base(object):
     def __iter__(self):
         return iter(self.value)
 
-    def __del__(self):
-        self.delete()
 
-    def __eq__(self, value):
-        return self._op(operator.eq, value)
+class Binary(object):
 
-    def __lt__(self, value):
-        return self._op(operator.lt, value)
+    def __and__(self, i):
+        return self._op(operator.and_, i)
 
-    def __le__(self, value):
-        return self._op(operator.le, value)
+    def __rand__(self, i):
+        return self._rop(operator.and_, i)
 
-    def __gt__(self, value):
-        return self._op(operator.gt, value)
+    def __xor__(self, i):
+        return self._op(operator.xor, i)
 
-    def __ge__(self, value):
-        return self._op(operator.ge, value)
+    def __rxor__(self, i):
+        return self._rop(operator.xor, i)
+
+    def __or__(self, i):
+        return self._op(operator.or_, i)
+
+    def __ror__(self, i):
+        return self._rop(operator.or_, i)
 
 
-class Commutative(Base):
+class Commutative(object):
 
     def __add__(self, value):
         return self._op(operator.add, value)
@@ -104,19 +125,7 @@ class Commutative(Base):
         return self._rop(operator.mul, value)
 
 
-class Arithemtic(Commutative):
-
-    def __add__(self, i):
-        return self._op(operator.add, i)
-
-    def __radd__(self, i):
-        return self._rop(operator.add, i)
-
-    def __mul__(self, i):
-        return self._op(operator.mul, i)
-
-    def __rmul__(self, i):
-        return self._rop(operator.mul, i)
+class Arithemtic(Binary, Commutative):
 
     def __sub__(self, i):
         return self._op(operator.sub, i)
@@ -160,26 +169,8 @@ class Arithemtic(Commutative):
     def __rrshift__(self, i):
         return self._rop(operator.rshift, i)
 
-    def __and__(self, i):
-        return self._op(operator.and_, i)
 
-    def __rand__(self, i):
-        return self._rop(operator.and_, i)
-
-    def __xor__(self, i):
-        return self._op(operator.xor, i)
-
-    def __rxor__(self, i):
-        return self._rop(operator.xor, i)
-
-    def __or__(self, i):
-        return self._op(operator.or_, i)
-
-    def __ror__(self, i):
-        return self._rop(operator.or_, i)
-
-
-class List(Commutative):
+class List(Base, Commutative):
 
     @property
     def value(self):
@@ -219,11 +210,11 @@ class List(Commutative):
     def __delitem__(self, i):
         self.pop(i)
 
-    def extend(self, l):
-        self.rpush(*l)
-
     def append(self, value):
         self.extend([value])
+
+    def extend(self, l):
+        self.rpush(*l)
 
     def insert(self, i, value):
         self.list_insert(i, value)
@@ -249,7 +240,7 @@ class List(Commutative):
         self._dispatch("sort")(desc=reverse, store=self.key, alpha=True)
 
 
-class Set(Base):
+class Set(Base, Binary):
 
     @property
     def value(self):
@@ -264,6 +255,43 @@ class Set(Base):
 
     def _to_keys(self, values):
         return [value.key for value in values]
+
+    def __and__(self, value):
+        return self.intersection(value)
+
+    def __iand___(self, value):
+        self.intersection_update(value)
+        return self
+
+    def __or__(self, value):
+        return self.union(value)
+
+    def __ior___(self, value):
+        self.update(value)
+        return self
+
+    def __xor__(self, value):
+        return self.symmetric_difference(value)
+
+    def __ixor__(self, value):
+        self.symmetric_difference_update(value)
+        return self
+
+    def __sub__(self, value):
+        return self.difference(value)
+
+    def __isub__(self, value):
+        self.difference_update(value)
+        return self
+
+    def __rsub__(self, i):
+        return self._rop(operator.sub, i)
+
+    def __len__(self):
+        return self.scard()
+
+    def __contains__(self, value):
+        return self.sismember(value)
 
     def add(self, value):
         self.update([value])
@@ -287,22 +315,6 @@ class Set(Base):
         except KeyError:
             pass
 
-    def __len__(self):
-        return self.scard()
-
-    def __contains__(self, value):
-        return self.sismember(value)
-
-    def __and__(self, value):
-        return self.intersection(value)
-
-    def __iand___(self, value):
-        self.intersection_update(value)
-        return self
-
-    def __rand__(self, value):
-        return self._rop(operator.and_, value)
-
     def intersection(self, *values):
         if self._all_redis(values):
             return self.sinter(*self._to_keys(values))
@@ -317,31 +329,11 @@ class Set(Base):
             self.set_intersection_update(*values)
         return self
 
-    def __or__(self, value):
-        return self.union(value)
-
-    def __ior___(self, value):
-        self.update(value)
-        return self
-
-    def __ror__(self, value):
-        return self._rop(operator.or_, value)
-
     def union(self, *values):
         if self._all_redis(values):
             return self.sunion(*self._to_keys(values))
         else:
             return reduce(operator.or_, (self.value,) + values)
-
-    def __sub__(self, value):
-        return self.difference(value)
-
-    def __isub__(self, value):
-        self.difference_update(value)
-        return self
-
-    def __rsub__(self, value):
-        return self._rop(operator.sub, value)
 
     def difference(self, *values):
         if self._all_redis(values):
@@ -359,16 +351,6 @@ class Set(Base):
                 all_values.append(all_values[0])
             self.set_difference_update(*all_values)
         return self
-
-    def __xor__(self, value):
-        return self.symmetric_difference(value)
-
-    def __ixor__(self, value):
-        self.symmetric_difference_update(value)
-        return self
-
-    def __rxor__(self, value):
-        return self._rop(operator.xor, value)
 
     def symmetric_difference(self, value):
         if isinstance(value, self.__class__):
@@ -478,7 +460,7 @@ class Dict(Base):
         return cls({}.fromkeys(*args))
 
 
-class String(Commutative):
+class String(Base, Commutative):
 
     @property
     def value(self):
@@ -526,16 +508,18 @@ class String(Commutative):
 class ImmutableString(String):
 
     def __iadd__(self, s):
-        return self + s
+        self.key = self.__class__(self + s).key
+        return self
 
     def __imul__(self, i):
-        return self * i
+        self.key = self.__class__(self * i).key
+        return self
 
     def __setitem__(self, i):
         raise TypeError
 
 
-class Int(Base):
+class Int(Base, Arithemtic):
 
     @property
     def value(self):
@@ -546,17 +530,13 @@ class Int(Base):
         if value:
             self.set(value)
 
-
-
     def __isub__(self, i):
         self.decr(i)
         return self
 
-
     def __iadd__(self, i):
         self.incr(i)
         return self
-
 
     def __imul__(self, i):
         return self
