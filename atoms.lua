@@ -97,3 +97,43 @@ function string_setitem()
     s = string.sub(s, 1, start) .. ARGV[3] .. string.sub(s, stop + 1)
     redis.call('SET', KEYS[1], s)
 end
+
+function number_multiply()
+    local n = tonumber(redis.call('GET', KEYS[1])) * tonumber(ARGV[1])
+    redis.call('SET', KEYS[1], n)
+end
+
+function number_divide()
+    local n = tonumber(redis.call('GET', KEYS[1])) / tonumber(ARGV[1])
+    redis.call('SET', KEYS[1], n)
+end
+
+function number_floordiv()
+    local n = math.floor(tonumber(redis.call('GET', KEYS[1])) / tonumber(ARGV[1]))
+    redis.call('SET', KEYS[1], n)
+end
+
+function number_mod()
+    local n = math.mod(tonumber(redis.call('GET', KEYS[1])), tonumber(ARGV[1]))
+    redis.call('SET', KEYS[1], n)
+end
+
+function number_pow()
+    local n = math.pow(tonumber(redis.call('GET', KEYS[1])), tonumber(ARGV[1]))
+    redis.call('SET', KEYS[1], n)
+end
+
+function number_and()
+end
+
+function number_or()
+end
+
+function number_xor()
+end
+
+function number_lshift()
+end
+
+function number_rshift()
+end

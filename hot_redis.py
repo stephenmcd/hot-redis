@@ -63,7 +63,7 @@ class Commutative(object):
     __mul__       = op_left(operator.mul)
     __rmul__      = op_right(operator.mul)
 
-class Arithemtic(Binary, Commutative):
+class Arithmetic(Binary, Commutative):
     __sub__       = op_left(operator.sub)
     __rsub__      = op_right(operator.sub)
     __div__       = op_left(operator.div)
@@ -452,7 +452,7 @@ class ImmutableString(String):
         raise TypeError
 
 
-class Int(Base, Arithemtic):
+class Int(Base, Arithmetic):
 
     @property
     def value(self):
@@ -466,12 +466,13 @@ class Int(Base, Arithemtic):
     __iadd__       = inplace("incr")
     __isub__       = inplace("decr")
     __imul__       = inplace("number_multiply")
-    __iand__       = inplace("number_and")
-    __ior__        = inplace("number_or")
-    __ixor__       = inplace("number_xor")
+    __idiv__       = inplace("number_divide")
     __ifloordiv__  = inplace("number_floordiv")
     __imod__       = inplace("number_mod")
     __ipow__       = inplace("number_pow")
+    __iand__       = inplace("number_and")
+    __ior__        = inplace("number_or")
+    __ixor__       = inplace("number_xor")
     __ilshift__    = inplace("number_lshift")
     __irshift__    = inplace("number_rshift")
 
