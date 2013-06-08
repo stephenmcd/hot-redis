@@ -96,14 +96,17 @@ class Base(Comparative):
         return self._dispatch(name)
 
     def __repr__(self):
-        value = repr(self.value)
-        return "%s(%s, '%s')" % (self.__class__.__name__, value, self.key)
+        bits = (self.__class__.__name__, repr(self.value), self.key)
+        return "%s(%s, '%s')" % bits
+
+
+class Iterable(Base):
 
     def __iter__(self):
         return iter(self.value)
 
 
-class List(Base, Commutative):
+class List(Iterable, Commutative):
 
     @property
     def value(self):
@@ -173,7 +176,7 @@ class List(Base, Commutative):
         self._dispatch("sort")(desc=reverse, store=self.key, alpha=True)
 
 
-class Set(Base, Binary):
+class Set(Iterable, Binary):
 
     @property
     def value(self):
@@ -307,7 +310,7 @@ class Set(Base, Binary):
         return self >= value
 
 
-class Dict(Base):
+class Dict(Iterable):
 
     @property
     def value(self):
@@ -392,7 +395,7 @@ class Dict(Base):
         return cls({}.fromkeys(*args))
 
 
-class String(Base, Commutative):
+class String(Iterable, Commutative):
 
     @property
     def value(self):
