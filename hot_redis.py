@@ -10,20 +10,36 @@ lua_scripts = {}
 def load_lua_scripts():
     with open("atoms.lua", "r") as f:
         for func in f.read().strip().split("function "):
-            if not func:
-                continue
-            name, code = func.split("\n", 1)
-            name = name.split("(")[0].strip()
-            code = code.rsplit("end", 1)[0].strip()
-            lua_scripts[name] = client.register_script(code)
+            if func:
+                name, code = func.split("\n", 1)
+                name = name.split("(")[0].strip()
+                code = code.rsplit("end", 1)[0].strip()
+                lua_scripts[name] = client.register_script(code)
 
 load_lua_scripts()
 
 
-value_left  = lambda a, b: b.value if isinstance(b, a.__class__) else b
-value_right = lambda a, b: a if isinstance(b, a.__class__) else a.value
-op_left     = lambda op: lambda a, b: op(a.value, value_left(a, b))
-op_right    = lambda op: lambda a, b: op(value_left(a, b), value_right(a, b))
+def value_left(self, value):
+    return value.value if isinstance(value, self.__class__) else value
+
+def value_right(self, value):
+    return self if isinstance(value, self.__class__) else self.value
+
+def op_left(op):
+    def method(self, value):
+        return op(self.value, value_left(self, value))
+    return method
+
+def op_right(op):
+    def method(self, value):
+        return op(value_left(self, value), value_right(self, value))
+    return method
+
+def inplace(method_name):
+    def method(self, value):
+        getattr(self, method_name)(value_left(self, value))
+        return self
+    return method
 
 
 class Comparative(object):
@@ -50,6 +66,10 @@ class Commutative(object):
 class Arithemtic(Binary, Commutative):
     __sub__       = op_left(operator.sub)
     __rsub__      = op_right(operator.sub)
+    __div__       = op_left(operator.div)
+    __rdiv__      = op_right(operator.div)
+    __truediv__   = op_left(operator.truediv)
+    __rtruediv__  = op_right(operator.truediv)
     __floordiv__  = op_left(operator.floordiv)
     __rfloordiv__ = op_right(operator.floordiv)
     __mod__       = op_left(operator.mod)
@@ -116,13 +136,8 @@ class List(Iterable, Commutative):
     def value(self, value):
         self.extend(value)
 
-    def __iadd__(self, l):
-        self.extend(value_left(self, l))
-        return self
-
-    def __imul__(self, i):
-        self.list_multiply(i)
-        return self
+    __iadd__ = inplace("extend")
+    __imul__ = inplace("list_multiply")
 
     def __len__(self):
         return self.llen()
@@ -192,35 +207,23 @@ class Set(Iterable, Binary):
     def _to_keys(self, values):
         return [value.key for value in values]
 
+    __iand__ = inplace("intersection_update")
+    __ior__  = inplace("update")
+    __ixor__ = inplace("symmetric_difference_update")
+    __isub__ = inplace("difference_update")
+    __rsub__ = op_right(operator.sub)
+
     def __and__(self, value):
         return self.intersection(value)
-
-    def __iand___(self, value):
-        self.intersection_update(value)
-        return self
 
     def __or__(self, value):
         return self.union(value)
 
-    def __ior___(self, value):
-        self.update(value)
-        return self
-
     def __xor__(self, value):
         return self.symmetric_difference(value)
 
-    def __ixor__(self, value):
-        self.symmetric_difference_update(value)
-        return self
-
     def __sub__(self, value):
         return self.difference(value)
-
-    def __isub__(self, value):
-        self.difference_update(value)
-        return self
-
-    __rsub__ = op_right(operator.sub)
 
     def __len__(self):
         return self.scard()
@@ -406,13 +409,8 @@ class String(Iterable, Commutative):
         if value:
             self.set(value)
 
-    def __iadd__(self, s):
-        self.append(value_left(self, s))
-        return self
-
-    def __imul__(self, i):
-        self.string_multiply(i)
-        return self
+    __iadd__ = inplace("append")
+    __imul__ = inplace("string_multiply")
 
     def __len__(self):
         return self.strlen()
@@ -465,16 +463,32 @@ class Int(Base, Arithemtic):
         if value:
             self.set(value)
 
-    def __isub__(self, i):
-        self.decr(i)
+    __iadd__       = inplace("incr")
+    __isub__       = inplace("decr")
+    __imul__       = inplace("number_multiply")
+    __iand__       = inplace("number_and")
+    __ior__        = inplace("number_or")
+    __ixor__       = inplace("number_xor")
+    __ifloordiv__  = inplace("number_floordiv")
+    __imod__       = inplace("number_mod")
+    __ipow__       = inplace("number_pow")
+    __ilshift__    = inplace("number_lshift")
+    __irshift__    = inplace("number_rshift")
+
+
+class Float(Int):
+
+    @property
+    def value(self):
+        return float(self.get())
+
+    @value.setter
+    def value(self, value):
+        if value:
+            self.set(value)
+
+    __iadd__ = inplace("incrbyfloat")
+
+    def __isub__(self, f):
+        self.incrbyfloat(-f)
         return self
-
-    def __iadd__(self, i):
-        self.incr(i)
-        return self
-
-    def __imul__(self, i):
-        return self
-
-
-
