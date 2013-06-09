@@ -37,10 +37,6 @@ class ListTests(BaseTestCase):
         b = ["nba", "hang", "time"]
         self.assertEquals(a + b, hot_redis.List(a) + hot_redis.List(b))
         self.assertEquals(a + b, hot_redis.List(a) + b)
-
-    def test_iadd(self):
-        a = ["wagwaan", "hot", "skull"]
-        b = ["nba", "hang", "time"]
         c = hot_redis.List(a)
         d = hot_redis.List(b)
         d += c
@@ -50,13 +46,9 @@ class ListTests(BaseTestCase):
 
     def test_mul(self):
         a = ["wagwaan", "hot", "skull"]
-        i = 9000
-        self.assertEquals(a * i, hot_redis.List(a) * i)
-
-    def test_imul(self):
-        a = ["wagwaan", "hot", "skull"]
         b = hot_redis.List(a)
         i = 9000
+        self.assertEquals(a * i, hot_redis.List(a) * i)
         b *= i
         self.assertEquals(a * i, b)
 
@@ -467,14 +459,10 @@ class StringTests(BaseTestCase):
     def test_add(self):
         a = "wagwaan"
         b = "hotskull"
-        self.assertEquals(a + b, hot_redis.String(a) + hot_redis.String(b))
-        self.assertEquals(a + b, hot_redis.String(a) + b)
-
-    def test_iadd(self):
-        a = "wagwaan"
-        b = "hotskull"
         c = hot_redis.String(a)
         d = hot_redis.String(b)
+        self.assertEquals(a + b, hot_redis.String(a) + hot_redis.String(b))
+        self.assertEquals(a + b, hot_redis.String(a) + b)
         d += c
         c += b
         self.assertEquals(a + b, c)
@@ -482,13 +470,9 @@ class StringTests(BaseTestCase):
 
     def test_mul(self):
         a = "wagwaan"
-        i = 9000
-        self.assertEquals(a * i, hot_redis.String(a) * i)
-
-    def test_imul(self):
-        a = "wagwaan"
         b = hot_redis.String(a)
         i = 9000
+        self.assertEquals(a * i, hot_redis.String(a) * i)
         b *= i
         self.assertEquals(a * i, b)
 
@@ -543,6 +527,157 @@ class StringTests(BaseTestCase):
             d[0] = b
         self.assertRaises(TypeError, immutable_set)
 
+
+class IntTests(BaseTestCase):
+
+    def test_value(self):
+        a = 420
+        self.assertEquals(hot_redis.Int(a), a)
+
+    def test_add(self):
+        a = 420
+        b = 9000
+        self.assertEquals(a + b, hot_redis.Int(a) + hot_redis.Int(b))
+        self.assertEquals(a + b, hot_redis.Int(a) + b)
+        c = hot_redis.Int(a)
+        d = hot_redis.Int(b)
+        d += c
+        c += b
+        self.assertEquals(a + b, c)
+        self.assertEquals(b + a, d)
+
+    def test_mul(self):
+        a = 420
+        b = hot_redis.Int(a)
+        i = 9000
+        self.assertEquals(a * i, hot_redis.Int(a) * i)
+        b *= i
+        self.assertEquals(a * i, b)
+
+    def test_sub(self):
+        a = 420
+        b = 9000
+        self.assertEquals(a - b, hot_redis.Int(a) - hot_redis.Int(b))
+        self.assertEquals(a - b, hot_redis.Int(a) - b)
+        c = hot_redis.Int(a)
+        d = hot_redis.Int(b)
+        d -= c
+        c -= b
+        self.assertEquals(a - b, c)
+        self.assertEquals(b - a, d)
+
+    def test_div(self):
+        a = 420
+        b = 9000
+        self.assertEquals(a / b, hot_redis.Int(a) / hot_redis.Int(b))
+        self.assertEquals(a / b, hot_redis.Int(a) / b)
+        c = hot_redis.Int(a)
+        d = hot_redis.Int(b)
+        d /= c
+        c /= b
+        self.assertEquals(a / b, c)
+        self.assertEquals(b / a, d)
+
+    def test_mod(self):
+        a = 420
+        b = 9000
+        self.assertEquals(a % b, hot_redis.Int(a) % hot_redis.Int(b))
+        self.assertEquals(a % b, hot_redis.Int(a) % b)
+        c = hot_redis.Int(a)
+        d = hot_redis.Int(b)
+        d %= c
+        c %= b
+        self.assertEquals(a % b, c)
+        self.assertEquals(b % a, d)
+
+    def test_pow(self):
+        a = 4
+        b = 20
+        self.assertEquals(a ** b, hot_redis.Int(a) ** hot_redis.Int(b))
+        self.assertEquals(a ** b, hot_redis.Int(a) ** b)
+        c = hot_redis.Int(a)
+        d = hot_redis.Int(b)
+        d **= c
+        c **= b
+        self.assertEquals(a ** b, c)
+        self.assertEquals(b ** a, d)
+
+
+class FloatTests(BaseTestCase):
+
+    def test_value(self):
+        a = 420.666
+        self.assertAlmostEqual(hot_redis.Float(a), a)
+
+    def test_add(self):
+        a = 420.666
+        b = 9000.666
+        self.assertAlmostEqual(a + b, hot_redis.Float(a) + hot_redis.Float(b))
+        self.assertAlmostEqual(a + b, hot_redis.Float(a) + b)
+        c = hot_redis.Float(a)
+        d = hot_redis.Float(b)
+        d += c
+        c += b
+        self.assertAlmostEqual(a + b, c)
+        self.assertAlmostEqual(b + a, d)
+
+    def test_mul(self):
+        a = 420.666
+        b = hot_redis.Float(a)
+        i = 9000.666
+        self.assertAlmostEqual(a * i, hot_redis.Float(a) * i)
+        b *= i
+        self.assertAlmostEqual(a * i, b)
+
+    def test_sub(self):
+        a = 420.666
+        b = 9000.666
+        self.assertAlmostEqual(a - b, hot_redis.Float(a) - hot_redis.Float(b))
+        self.assertAlmostEqual(a - b, hot_redis.Float(a) - b)
+        c = hot_redis.Float(a)
+        d = hot_redis.Float(b)
+        d -= c
+        c -= b
+        self.assertAlmostEqual(a - b, c)
+        self.assertAlmostEqual(b - a, d)
+
+    def test_div(self):
+        a = 420.666
+        b = 9000.666
+        self.assertAlmostEqual(a / b, hot_redis.Float(a) / hot_redis.Float(b))
+        self.assertAlmostEqual(a / b, hot_redis.Float(a) / b)
+        c = hot_redis.Float(a)
+        d = hot_redis.Float(b)
+        d /= c
+        c /= b
+        self.assertAlmostEqual(a / b, c)
+        self.assertAlmostEqual(b / a, d)
+
+    def test_mod(self):
+        a = 420.666
+        b = 9000.666
+        self.assertAlmostEqual(a % b, hot_redis.Float(a) % hot_redis.Float(b))
+        self.assertAlmostEqual(a % b, hot_redis.Float(a) % b)
+        c = hot_redis.Float(a)
+        d = hot_redis.Float(b)
+        d %= c
+        c %= b
+        self.assertAlmostEqual(a % b, c)
+        self.assertAlmostEqual(b % a, d)
+
+    def test_pow(self):
+        a = 4.666
+        b = 20.666
+        c = 4
+        d = 2
+        self.assertAlmostEqual(a ** b, hot_redis.Float(a) ** hot_redis.Float(b))
+        self.assertAlmostEqual(a ** b, hot_redis.Float(a) ** b)
+        e = hot_redis.Float(a)
+        f = hot_redis.Float(b)
+        f **= c
+        e **= d
+        self.assertAlmostEqual(a ** d, e)
+        self.assertAlmostEqual(b ** c, f)
 
 
 if __name__ == "__main__":

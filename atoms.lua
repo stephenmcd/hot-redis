@@ -114,12 +114,12 @@ function number_floordiv()
 end
 
 function number_mod()
-    local n = math.mod(tonumber(redis.call('GET', KEYS[1])), tonumber(ARGV[1]))
+    local n = tonumber(redis.call('GET', KEYS[1])) % tonumber(ARGV[1])
     redis.call('SET', KEYS[1], n)
 end
 
 function number_pow()
-    local n = math.pow(tonumber(redis.call('GET', KEYS[1])), tonumber(ARGV[1]))
+    local n = tonumber(redis.call('GET', KEYS[1])) ^ tonumber(ARGV[1])
     redis.call('SET', KEYS[1], n)
 end
 

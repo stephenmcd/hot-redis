@@ -456,7 +456,7 @@ class Int(Base, Arithmetic):
 
     @property
     def value(self):
-        return int(self.get())
+        return int(float(self.get()))
 
     @value.setter
     def value(self, value):
@@ -491,5 +491,5 @@ class Float(Int):
     __iadd__ = inplace("incrbyfloat")
 
     def __isub__(self, f):
-        self.incrbyfloat(-f)
+        self.incrbyfloat(f * -1)
         return self
