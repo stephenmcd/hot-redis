@@ -22,18 +22,22 @@ load_lua_scripts()
 def value_left(self, value):
     return value.value if isinstance(value, self.__class__) else value
 
+
 def value_right(self, value):
     return self if isinstance(value, self.__class__) else self.value
+
 
 def op_left(op):
     def method(self, value):
         return op(self.value, value_left(self, value))
     return method
 
+
 def op_right(op):
     def method(self, value):
         return op(value_left(self, value), value_right(self, value))
     return method
+
 
 def inplace(method_name):
     def method(self, value):
@@ -42,54 +46,25 @@ def inplace(method_name):
     return method
 
 
-class Comparative(object):
-    __eq__        = op_left(operator.eq)
-    __lt__        = op_left(operator.lt)
-    __le__        = op_left(operator.le)
-    __gt__        = op_left(operator.gt)
-    __ge__        = op_left(operator.ge)
-
-class Binary(object):
-    __and__       = op_left(operator.and_)
-    __rand__      = op_right(operator.and_)
-    __or__        = op_left(operator.or_)
-    __ror__       = op_right(operator.or_)
-    __xor__       = op_left(operator.xor)
-    __rxor__      = op_right(operator.xor)
-
-class Commutative(object):
-    __add__       = op_left(operator.add)
-    __radd__      = op_right(operator.add)
-    __mul__       = op_left(operator.mul)
-    __rmul__      = op_right(operator.mul)
-
-class Arithmetic(Binary, Commutative):
-    __sub__       = op_left(operator.sub)
-    __rsub__      = op_right(operator.sub)
-    __div__       = op_left(operator.div)
-    __rdiv__      = op_right(operator.div)
-    __truediv__   = op_left(operator.truediv)
-    __rtruediv__  = op_right(operator.truediv)
-    __floordiv__  = op_left(operator.floordiv)
-    __rfloordiv__ = op_right(operator.floordiv)
-    __mod__       = op_left(operator.mod)
-    __rmod__      = op_right(operator.mod)
-    __divmod__    = op_left(divmod)
-    __rdivmod__   = op_right(divmod)
-    __pow__       = op_left(operator.pow)
-    __rpow__      = op_right(operator.pow)
-    __lshift__    = op_left(operator.lshift)
-    __rlshift__   = op_right(operator.lshift)
-    __rshift__    = op_left(operator.rshift)
-    __rrshift__   = op_right(operator.rshift)
-
-
-class Base(Comparative):
+class Base(object):
 
     def __init__(self, value=None, key=None):
         self.key = key or str(uuid.uuid4())
         if value:
             self.value = value
+
+    __eq__ = op_left(operator.eq)
+    __lt__ = op_left(operator.lt)
+    __le__ = op_left(operator.le)
+    __gt__ = op_left(operator.gt)
+    __ge__ = op_left(operator.ge)
+
+    def __repr__(self):
+        bits = (self.__class__.__name__, repr(self.value), self.key)
+        return "%s(%s, '%s')" % bits
+
+    def __getattr__(self, name):
+        return self._dispatch(name)
 
     def _dispatch(self, name):
         try:
@@ -112,21 +87,58 @@ class Base(Comparative):
             return func
         raise AttributeError(name)
 
-    def __getattr__(self, name):
-        return self._dispatch(name)
 
-    def __repr__(self):
-        bits = (self.__class__.__name__, repr(self.value), self.key)
-        return "%s(%s, '%s')" % bits
+class Bitwise(Base):
+
+    __and__       = op_left(operator.and_)
+    __or__        = op_left(operator.or_)
+    __xor__       = op_left(operator.xor)
+    __lshift__    = op_left(operator.lshift)
+    __rshift__    = op_left(operator.rshift)
+    __rand__      = op_right(operator.and_)
+    __ror__       = op_right(operator.or_)
+    __rxor__      = op_right(operator.xor)
+    __rlshift__   = op_right(operator.lshift)
+    __rrshift__   = op_right(operator.rshift)
 
 
 class Iterable(Base):
 
-    def __iter__(self):
-        return iter(self.value)
+    __add__       = op_left(operator.add)
+    __mul__       = op_left(operator.mul)
+    __radd__      = op_right(operator.add)
+    __rmul__      = op_right(operator.mul)
 
 
-class List(Iterable, Commutative):
+class Numeric(Base):
+
+    __add__       = op_left(operator.add)
+    __mul__       = op_left(operator.mul)
+    __sub__       = op_left(operator.sub)
+    __div__       = op_left(operator.div)
+    __floordiv__  = op_left(operator.floordiv)
+    __truediv__   = op_left(operator.truediv)
+    __mod__       = op_left(operator.mod)
+    __divmod__    = op_left(divmod)
+    __pow__       = op_left(operator.pow)
+    __radd__      = op_right(operator.add)
+    __rmul__      = op_right(operator.mul)
+    __rsub__      = op_right(operator.sub)
+    __rdiv__      = op_right(operator.div)
+    __rtruediv__  = op_right(operator.truediv)
+    __rfloordiv__ = op_right(operator.floordiv)
+    __rmod__      = op_right(operator.mod)
+    __rdivmod__   = op_right(divmod)
+    __rpow__      = op_right(operator.pow)
+    __isub__      = inplace("decr")
+    __imul__      = inplace("number_multiply")
+    __idiv__      = inplace("number_divide")
+    __ifloordiv__ = inplace("number_floordiv")
+    __imod__      = inplace("number_mod")
+    __ipow__      = inplace("number_pow")
+
+
+class List(Iterable):
 
     @property
     def value(self):
@@ -161,6 +173,9 @@ class List(Iterable, Commutative):
     def __delitem__(self, i):
         self.pop(i)
 
+    def __iter__(self):
+        return iter(self.value)
+
     def append(self, value):
         self.extend([value])
 
@@ -191,7 +206,7 @@ class List(Iterable, Commutative):
         self._dispatch("sort")(desc=reverse, store=self.key, alpha=True)
 
 
-class Set(Iterable, Binary):
+class Set(Bitwise):
 
     @property
     def value(self):
@@ -230,6 +245,9 @@ class Set(Iterable, Binary):
 
     def __contains__(self, value):
         return self.sismember(value)
+
+    def __iter__(self):
+        return iter(self.value)
 
     def add(self, value):
         self.update([value])
@@ -313,7 +331,7 @@ class Set(Iterable, Binary):
         return self >= value
 
 
-class Dict(Iterable):
+class Dict(Base):
 
     @property
     def value(self):
@@ -398,7 +416,7 @@ class Dict(Iterable):
         return cls({}.fromkeys(*args))
 
 
-class String(Iterable, Commutative):
+class String(Iterable):
 
     @property
     def value(self):
@@ -437,6 +455,9 @@ class String(Iterable, Commutative):
             raise IndexError
         return value
 
+    def __iter__(self):
+        return iter(self.value)
+
 
 class ImmutableString(String):
 
@@ -452,7 +473,7 @@ class ImmutableString(String):
         raise TypeError
 
 
-class Int(Base, Arithmetic):
+class Int(Numeric, Bitwise):
 
     @property
     def value(self):
@@ -463,21 +484,14 @@ class Int(Base, Arithmetic):
         if value:
             self.set(value)
 
-    __iadd__       = inplace("incr")
-    __isub__       = inplace("decr")
-    __imul__       = inplace("number_multiply")
-    __idiv__       = inplace("number_divide")
-    __ifloordiv__  = inplace("number_floordiv")
-    __imod__       = inplace("number_mod")
-    __ipow__       = inplace("number_pow")
-    __iand__       = inplace("number_and")
-    __ior__        = inplace("number_or")
-    __ixor__       = inplace("number_xor")
-    __ilshift__    = inplace("number_lshift")
-    __irshift__    = inplace("number_rshift")
+    __iand__    = inplace("number_and")
+    __ior__     = inplace("number_or")
+    __ixor__    = inplace("number_xor")
+    __ilshift__ = inplace("number_lshift")
+    __irshift__ = inplace("number_rshift")
 
 
-class Float(Int):
+class Float(Numeric):
 
     @property
     def value(self):
