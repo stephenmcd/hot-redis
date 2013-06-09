@@ -8,12 +8,17 @@ client = redis.Redis()
 lua_scripts = {}
 
 def load_lua_scripts():
+    with open("bit.lua", "r") as f:
+        luabit = f.read()
     with open("atoms.lua", "r") as f:
         for func in f.read().strip().split("function "):
             if func:
                 name, code = func.split("\n", 1)
                 name = name.split("(")[0].strip()
                 code = code.rsplit("end", 1)[0].strip()
+                if name in ("number_and", "number_or", "number_xor",
+                            "number_lshift", "number_rshift"):
+                    code = luabit + code
                 lua_scripts[name] = client.register_script(code)
 
 load_lua_scripts()

@@ -124,16 +124,26 @@ function number_pow()
 end
 
 function number_and()
+    local n = bit_and(tonumber(redis.call('GET', KEYS[1])), tonumber(ARGV[1]))
+    redis.call('SET', KEYS[1], n)
 end
 
 function number_or()
+    local n = bit_or(tonumber(redis.call('GET', KEYS[1])), tonumber(ARGV[1]))
+    redis.call('SET', KEYS[1], n)
 end
 
 function number_xor()
+    local n = bit_xor(tonumber(redis.call('GET', KEYS[1])), tonumber(ARGV[1]))
+    redis.call('SET', KEYS[1], n)
 end
 
 function number_lshift()
+    local n = bit_lshift(tonumber(redis.call('GET', KEYS[1])), tonumber(ARGV[1]))
+    redis.call('SET', KEYS[1], n)
 end
 
 function number_rshift()
+    local n = bit_rshift(tonumber(redis.call('GET', KEYS[1])), tonumber(ARGV[1]))
+    redis.call('SET', KEYS[1], n)
 end

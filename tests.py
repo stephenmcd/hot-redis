@@ -602,6 +602,66 @@ class IntTests(BaseTestCase):
         self.assertEquals(a ** b, c)
         self.assertEquals(b ** a, d)
 
+    def test_add(self):
+        a = 420
+        b = 9000
+        self.assertEquals(a & b, hot_redis.Int(a) & hot_redis.Int(b))
+        self.assertEquals(a & b, hot_redis.Int(a) & b)
+        c = hot_redis.Int(a)
+        d = hot_redis.Int(b)
+        d &= c
+        c &= b
+        self.assertEquals(a & b, c)
+        self.assertEquals(b & a, d)
+
+    def test_or(self):
+        a = 420
+        b = 9000
+        self.assertEquals(a | b, hot_redis.Int(a) | hot_redis.Int(b))
+        self.assertEquals(a | b, hot_redis.Int(a) | b)
+        c = hot_redis.Int(a)
+        d = hot_redis.Int(b)
+        d |= c
+        c |= b
+        self.assertEquals(a | b, c)
+        self.assertEquals(b | a, d)
+
+    def test_xor(self):
+        a = 420
+        b = 9000
+        self.assertEquals(a ^ b, hot_redis.Int(a) ^ hot_redis.Int(b))
+        self.assertEquals(a ^ b, hot_redis.Int(a) ^ b)
+        c = hot_redis.Int(a)
+        d = hot_redis.Int(b)
+        d ^= c
+        c ^= b
+        self.assertEquals(a ^ b, c)
+        self.assertEquals(b ^ a, d)
+
+    def test_lshift(self):
+        a = 4
+        b = 20
+        self.assertEquals(a << b, hot_redis.Int(a) << hot_redis.Int(b))
+        self.assertEquals(a << b, hot_redis.Int(a) << b)
+        c = hot_redis.Int(a)
+        d = hot_redis.Int(b)
+        d <<= c
+        c <<= b
+        self.assertEquals(a << b, c)
+        self.assertEquals(b << a, d)
+
+    def test_rshift(self):
+        a = 9000
+        b = 4
+        self.assertEquals(a >> b, hot_redis.Int(a) >> hot_redis.Int(b))
+        self.assertEquals(a >> b, hot_redis.Int(a) >> b)
+        c = hot_redis.Int(a)
+        d = hot_redis.Int(b)
+        d >>= c
+        c >>= b
+        self.assertEquals(a >> b, c)
+        self.assertEquals(b >> a, d)
+
 
 class FloatTests(BaseTestCase):
 
