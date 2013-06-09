@@ -6,9 +6,9 @@ Under the MIT license.
 
 Modified 2013 Stephen McDonald:
 
-- Converted to anonymous functions for embedding in Redis.
-- Removed functions: check_int, bit_xor2, bit_logic_rshift functions
-- Reformatted (changed 1 space indent to 4 spaces, removed blank lines)
+- Converted to anonymous functions for embedding in Redis
+- Removed functions: check_int, bit_xor2, bit_logic_rshift
+- Reformatting: 1 space indent to 4 spaces, removed blank lines
 
 --]]
 

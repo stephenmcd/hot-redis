@@ -1,6 +1,8 @@
 
 import operator
+import time
 import uuid
+import Queue as queue
 import redis
 
 
@@ -512,3 +514,64 @@ class Float(Numeric):
     def __isub__(self, f):
         self.incrbyfloat(f * -1)
         return self
+
+
+class Queue(object):
+
+    def __init__(self, maxsize=0, key=None):
+        self.queue = List(key=key)
+        self.maxsize = maxsize
+
+    def _blocking_pop(self, timeout=None):
+        return self.queue.blpop(timeout=timeout)
+
+    def qsize(self):
+        return len(self.queue)
+
+    def empty(self):
+        return self.qsize() == 0
+
+    def full(self):
+        return self.maxsize > 0 and self.qsize() >= self.maxsize
+
+    def put(self, item, block=True, timeout=None):
+        if self.maxsize == 0:
+            self.queue.append(item)
+        elif block:
+            start = time.time()
+            while True:
+                if self.queue.queue_put(item, self.maxsize):
+                    break
+                if time.time() - start >= timeout:
+                    raise queue.Full
+                time.sleep(.1)
+        else:
+            if not self.queue.queue_put(item, self.maxsize):
+                raise queue.Full
+
+    def put_nowait(self, item):
+        return self.put(item, block=False)
+
+    def get(self, block=True, timeout=None):
+        if block:
+            item = self._blocking_pop(timeout=timeout)[1]
+        else:
+            item = self.queue.pop()
+        if item is None:
+            raise queue.Empty
+        return item
+
+    def get_nowait(self):
+        return self.get(item, block=False)
+
+    def join(self):
+        while True:
+            if self.qsize() == 0:
+                break
+            sleep(.1)
+
+
+class LifoQueue(Queue):
+
+    def _blocking_pop(self, timeout=None):
+        return self.queue.brpop(timeout=timeout)

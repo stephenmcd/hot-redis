@@ -147,3 +147,13 @@ function number_rshift()
     local n = bit_rshift(tonumber(redis.call('GET', KEYS[1])), tonumber(ARGV[1]))
     redis.call('SET', KEYS[1], n)
 end
+
+function queue_put()
+    local size = redis.call('LLEN', KEYS[1])
+    local maxsize = tonumber(ARGV[2])
+    if size >= maxsize then
+        return 0
+    end
+    redis.call('RPUSH', KEYS[1], ARGV[1])
+    return 1
+end
