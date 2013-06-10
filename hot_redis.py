@@ -109,7 +109,7 @@ class Bitwise(Base):
     __rrshift__   = op_right(operator.rshift)
 
 
-class Iterable(Base):
+class Sequential(Base):
 
     __add__       = op_left(operator.add)
     __mul__       = op_left(operator.mul)
@@ -145,7 +145,7 @@ class Numeric(Base):
     __ipow__      = inplace("number_pow")
 
 
-class List(Iterable):
+class List(Sequential):
 
     @property
     def value(self):
@@ -423,7 +423,7 @@ class Dict(Base):
         return cls({}.fromkeys(*args))
 
 
-class String(Iterable):
+class String(Sequential):
 
     @property
     def value(self):
