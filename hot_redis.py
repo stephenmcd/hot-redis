@@ -2,7 +2,7 @@
 import operator
 import time
 import uuid
-import Queue as queue
+from Queue import Empty as QueueEmpty, Full as QueueFull
 import redis
 
 
@@ -516,17 +516,21 @@ class Float(Numeric):
         return self
 
 
-class Queue(object):
+class Queue(List):
 
-    def __init__(self, maxsize=0, key=None):
-        self.queue = List(key=key)
+    def __init__(self, value=None, key=None, maxsize=0):
+        super(Queue, self).__init__(value=value, key=key)
         self.maxsize = maxsize
 
-    def _blocking_pop(self, timeout=None):
-        return self.queue.blpop(timeout=timeout)
+    def _get(self, timeout=None):
+        return self.blpop(timeout=timeout)[1]
+
+    @property
+    def queue(self):
+        return self
 
     def qsize(self):
-        return len(self.queue)
+        return len(self)
 
     def empty(self):
         return self.qsize() == 0
@@ -536,42 +540,39 @@ class Queue(object):
 
     def put(self, item, block=True, timeout=None):
         if self.maxsize == 0:
-            self.queue.append(item)
-        elif block:
+            self.append(item)
+        else:
+            if not block:
+                timeout = 0
             start = time.time()
             while True:
-                if self.queue.queue_put(item, self.maxsize):
+                if self.queue_put(item, self.maxsize):
                     break
-                if time.time() - start >= timeout:
-                    raise queue.Full
+                if timeout is not None and time.time() - start >= timeout:
+                    raise QueueFull
                 time.sleep(.1)
-        else:
-            if not self.queue.queue_put(item, self.maxsize):
-                raise queue.Full
 
     def put_nowait(self, item):
         return self.put(item, block=False)
 
     def get(self, block=True, timeout=None):
         if block:
-            item = self._blocking_pop(timeout=timeout)[1]
+            item = self._get(timeout=timeout)
         else:
-            item = self.queue.pop()
+            item = self.pop()
         if item is None:
-            raise queue.Empty
+            raise QueueEmpty
         return item
 
     def get_nowait(self):
         return self.get(item, block=False)
 
     def join(self):
-        while True:
-            if self.qsize() == 0:
-                break
+        while not self.empty():
             sleep(.1)
 
 
 class LifoQueue(Queue):
 
-    def _blocking_pop(self, timeout=None):
-        return self.queue.brpop(timeout=timeout)
+    def _get(self, timeout=None):
+        return self.brpop(timeout=timeout)[1]
