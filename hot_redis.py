@@ -585,3 +585,56 @@ class DefaultDict(Dict):
 
     def __getitem__(self, name):
         return self.setdefault(name, self.default_factory())
+
+
+class Counter(DefaultDict):
+
+    def __init__(self, *args, **kwargs):
+        super(Counter, self).__init__(int, *args, **kwargs)
+
+    __radd__ = op_right(operator.add)
+    __rsub__ = op_right(operator.sub)
+    __rand__ = op_right(operator.and_)
+    __ror__  = op_right(operator.or_)
+
+    def __add__(self, value):
+        return self.update(value)
+
+    def __sub__(self, value):
+        return self.subtract(value)
+
+    def __and__(self, value):
+        return self.intersection(value)
+
+    def __or__(self, value):
+        return self.union(value)
+
+    def __iadd__(self, value):
+        pass
+
+    def __isub__(self, value):
+        pass
+
+    def __iand__(self, value):
+        pass
+
+    def __ior__(self, value):
+        pass
+
+    def _intersection(self, value):
+        pass
+
+    def _union(self, value):
+        pass
+
+    def update(self, value):
+        pass
+
+    def subtract(self, value):
+        pass
+
+    def elements(self):
+        for k, count in self.iteritems():
+            for i in range(count):
+                yield k
+
