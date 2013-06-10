@@ -401,7 +401,7 @@ class Dict(Base):
         if self.hsetnx(name, value) == 1:
             return value
         else:
-            return self[name]
+            return self.get(name)
 
     def get(self, name, default=None):
         value = self.hget(name)

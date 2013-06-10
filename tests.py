@@ -456,6 +456,8 @@ class DictTests(BaseTestCase):
         b = "popcaan"
         c = hot_redis.DefaultDict(lambda: b)
         self.assertEquals(c[a], b)
+        c[b] += a
+        self.assertEquals(c[b], b + a)
 
 
 class StringTests(BaseTestCase):
