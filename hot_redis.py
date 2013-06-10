@@ -522,9 +522,6 @@ class Queue(List):
         super(Queue, self).__init__(value=value, key=key)
         self.maxsize = maxsize
 
-    def _get(self, timeout=None):
-        return self.blpop(timeout=timeout)[1]
-
     @property
     def queue(self):
         return self
@@ -557,7 +554,9 @@ class Queue(List):
 
     def get(self, block=True, timeout=None):
         if block:
-            item = self._get(timeout=timeout)
+            item = self.blpop(timeout=timeout)
+            if item is not None:
+                item = item[1]
         else:
             item = self.pop()
         if item is None:
@@ -574,5 +573,5 @@ class Queue(List):
 
 class LifoQueue(Queue):
 
-    def _get(self, timeout=None):
-        return self.brpop(timeout=timeout)[1]
+    def append(self, item):
+        self.lpush(item)
