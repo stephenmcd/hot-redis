@@ -575,3 +575,13 @@ class LifoQueue(Queue):
 
     def append(self, item):
         self.lpush(item)
+
+
+class DefaultDict(Dict):
+
+    def __init__(self, default_factory, *args, **kwargs):
+        self.default_factory = default_factory
+        super(DefaultDict, self).__init__(*args, **kwargs)
+
+    def __getitem__(self, name):
+        return self.setdefault(name, self.default_factory())

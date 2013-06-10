@@ -451,6 +451,12 @@ class DictTests(BaseTestCase):
         c = hot_redis.Dict.fromkeys(a, b)
         self.assertEquals(c["wagwaan"], b)
 
+    def test_defaultdict(self):
+        a = "wagwaan"
+        b = "popcaan"
+        c = hot_redis.DefaultDict(lambda: b)
+        self.assertEquals(c[a], b)
+
 
 class StringTests(BaseTestCase):
 
