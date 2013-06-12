@@ -120,8 +120,8 @@ class Sequential(Base):
 class Numeric(Base):
 
     __add__       = op_left(operator.add)
-    __mul__       = op_left(operator.mul)
     __sub__       = op_left(operator.sub)
+    __mul__       = op_left(operator.mul)
     __div__       = op_left(operator.div)
     __floordiv__  = op_left(operator.floordiv)
     __truediv__   = op_left(operator.truediv)
@@ -129,14 +129,15 @@ class Numeric(Base):
     __divmod__    = op_left(divmod)
     __pow__       = op_left(operator.pow)
     __radd__      = op_right(operator.add)
-    __rmul__      = op_right(operator.mul)
     __rsub__      = op_right(operator.sub)
+    __rmul__      = op_right(operator.mul)
     __rdiv__      = op_right(operator.div)
     __rtruediv__  = op_right(operator.truediv)
     __rfloordiv__ = op_right(operator.floordiv)
     __rmod__      = op_right(operator.mod)
     __rdivmod__   = op_right(divmod)
     __rpow__      = op_right(operator.pow)
+    __iadd__      = inplace("incr")
     __isub__      = inplace("decr")
     __imul__      = inplace("number_multiply")
     __idiv__      = inplace("number_divide")
@@ -587,10 +588,24 @@ class DefaultDict(Dict):
         return self.setdefault(name, self.default_factory())
 
 
-class Counter(DefaultDict):
+class Counter(Dict):
 
-    def __init__(self, *args, **kwargs):
-        super(Counter, self).__init__(int, *args, **kwargs)
+    def __init__(self, value=None, key=None, **kwargs):
+        super(Counter, self).__init__(key=key)
+        self.update(value, **kwargs)
+
+    @property
+    def value(self):
+        return dict([(k, int(v)) for k, v in self.hgetall()])
+
+    def __getitem__(self, name):
+        return int(self.get(name, 0))
+
+    def __delitem__(self, name):
+        try:
+            super(Counter, self).__delitem__(name)
+        except KeyError:
+            pass
 
     __radd__ = op_right(operator.add)
     __rsub__ = op_right(operator.sub)
@@ -627,14 +642,25 @@ class Counter(DefaultDict):
     def _union(self, value):
         pass
 
-    def update(self, value):
-        pass
+    def _update(self, multiplier, value=None, **kwargs):
+        if value:
+            try:
+                value.iteritems
+            except AttributeError:
+                value = dict([(x, 1) for x in value])
+            for k in value:
+                kwargs[k] = kwargs.get(k, 0) + value[k]
+        for k in kwargs:
+            self.hincrby(k, kwargs[k] * multiplier)
+
+    def update(self, value=None, **kwargs):
+        self._update(1, value=None, **kwargs)
 
     def subtract(self, value):
-        pass
+        self._update(-1, value=None, **kwargs)
 
     def elements(self):
         for k, count in self.iteritems():
-            for i in range(count):
+            for i in range(int(count)):
                 yield k
 
