@@ -588,18 +588,24 @@ class DefaultDict(Dict):
         return self.setdefault(name, self.default_factory())
 
 
-class Counter(Dict):
+class Counter(Dict, dict):
 
     def __init__(self, value=None, key=None, **kwargs):
         super(Counter, self).__init__(key=key)
-        self.update(value, **kwargs)
+        self.update(value=value, **kwargs)
 
     @property
     def value(self):
-        return dict([(k, int(v)) for k, v in self.hgetall()])
+        value = super(Counter, self).value
+        return dict([(k, int(v)) for k, v in value.items()])
 
-    def __getitem__(self, name):
-        return int(self.get(name, 0))
+    def values(self):
+        values = super(Counter, self).values()
+        return [int(v) for v in values]
+
+    def get(self, name, default=None):
+        value = self.hget(name)
+        return int(value) if value is not None else default
 
     def __delitem__(self, name):
         try:
@@ -607,13 +613,11 @@ class Counter(Dict):
         except KeyError:
             pass
 
-    __radd__ = op_right(operator.add)
-    __rsub__ = op_right(operator.sub)
-    __rand__ = op_right(operator.and_)
-    __ror__  = op_right(operator.or_)
-
     def __add__(self, value):
-        return self.update(value)
+        result = self.value
+        for k, v in self._merge(value):
+            result[k] = result.get(k, 0) + v
+        return result
 
     def __sub__(self, value):
         return self.subtract(value)
@@ -636,28 +640,33 @@ class Counter(Dict):
     def __ior__(self, value):
         pass
 
-    def _intersection(self, value):
-        pass
-
-    def _union(self, value):
-        pass
-
-    def _update(self, multiplier, value=None, **kwargs):
+    def _merge(self, value=None, **kwargs):
         if value:
             try:
                 value.iteritems
             except AttributeError:
-                value = dict([(x, 1) for x in value])
-            for k in value:
-                kwargs[k] = kwargs.get(k, 0) + value[k]
-        for k in kwargs:
-            self.hincrby(k, kwargs[k] * multiplier)
+                for k in value:
+                    kwargs[k] = kwargs.get(k, 0) + 1
+            else:
+                for k in value:
+                    kwargs[k] = kwargs.get(k, 0) + value[k]
+        return kwargs.items()
+
+    def _update(self, value=None, multiplier=1, **kwargs):
+        for k, v in self._merge(value, **kwargs):
+            self.hincrby(k, v * multiplier)
 
     def update(self, value=None, **kwargs):
-        self._update(1, value=None, **kwargs)
+        self._update(value, 1, **kwargs)
 
-    def subtract(self, value):
-        self._update(-1, value=None, **kwargs)
+    def subtract(self, value=None, **kwargs):
+        self._update(value, -1, **kwargs)
+
+    def intersection(self, value):
+        pass
+
+    def union(self, value):
+        pass
 
     def elements(self):
         for k, count in self.iteritems():

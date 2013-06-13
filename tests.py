@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import Queue
+import collections
 import time
+import Queue
 import unittest
 import hot_redis
 
@@ -750,7 +751,7 @@ class FloatTests(BaseTestCase):
         self.assertAlmostEqual(b ** c, f)
 
 
-class QueueTests(unittest.TestCase):
+class QueueTests(BaseTestCase):
 
     def test_put(self):
         a = "wagwaan"
@@ -827,6 +828,113 @@ class QueueTests(unittest.TestCase):
         self.assertEquals(a, q.get())
         self.assertNotIn(a, q)
 
+
+class CounterTests(BaseTestCase):
+
+    def test_value(self):
+        a = "wagwaan"
+        b = {"hot": 420, "skull": -9000}
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        e = collections.Counter(**b)
+        f = hot_redis.Counter(**b)
+        self.assertEquals(c, d)
+        self.assertEquals(e, f)
+
+    def test_values(self):
+        a = "wagwaan"
+        b = {"hot": 420, "skull": -9000}
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        e = collections.Counter(**b)
+        f = hot_redis.Counter(**b)
+        self.assertItemsEqual(c.values(), d.values())
+        self.assertItemsEqual(e.values(), f.values())
+
+    def test_get(self):
+        a = "wagwaan"
+        b = {"hot": 420, "skull": -9000}
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        e = collections.Counter(**b)
+        f = hot_redis.Counter(**b)
+        self.assertEquals(c.get("a"), d.get("a"))
+        self.assertEquals(c.get("flute", "don"), d.get("flute", "don"))
+        self.assertEquals(e.get("hot"), f.get("hot"))
+        self.assertEquals(e.get("skull"), f.get("skull"))
+        self.assertEquals(e.get("flute", "don"), e.get("flute", "don"))
+
+    def test_del(self):
+        a = hot_redis.Counter("wagwaan")
+        del a["hotskull"]
+
+    def test_elements(self):
+        a = "wagwaan"
+        b = {"hotskull": 420}
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        e = collections.Counter(**b)
+        f = hot_redis.Counter(**b)
+        self.assertItemsEqual(c.elements(), d.elements())
+        self.assertItemsEqual(e.elements(), f.elements())
+
+    def test_update(self):
+        a = "wagwaan"
+        b = {"hotskull": 420}
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        c.update(hot_redis.Counter(a))
+        d.update(hot_redis.Counter(a))
+        self.assertEqual(d, c)
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        c.update(collections.Counter(a))
+        d.update(collections.Counter(a))
+        self.assertEqual(d, c)
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        c.update(a)
+        d.update(a)
+        self.assertEqual(d, c)
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        c.update(b)
+        d.update(b)
+        self.assertEqual(d, c)
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        c.update(**b)
+        d.update(**b)
+        self.assertEqual(d, c)
+
+    def test_subtract(self):
+        a = "wagwaan"
+        b = {"hotskull": 420}
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        c.subtract(hot_redis.Counter(a))
+        d.subtract(hot_redis.Counter(a))
+        self.assertEqual(d, c)
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        c.subtract(collections.Counter(a))
+        d.subtract(collections.Counter(a))
+        self.assertEqual(d, c)
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        c.subtract(a)
+        d.subtract(a)
+        self.assertEqual(d, c)
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        c.subtract(b)
+        d.subtract(b)
+        self.assertEqual(d, c)
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        c.subtract(**b)
+        d.subtract(**b)
+        self.assertEqual(d, c)
 
 if __name__ == "__main__":
     unittest.main()
