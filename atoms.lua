@@ -163,18 +163,9 @@ function counter_update()
     for i = 1, #ARGV, 2 do
         local current = tonumber(redis.call('HGET', KEYS[1], ARGV[i]))
         local new = tonumber(ARGV[i+1])
-        local update = false
-        if not current then
-            update = true
-        elseif new > 0 then
-            if action == 'min' and new < current then
-                update = true
-            end
-            if action == 'max' and new > current then
-                update = true
-            end
-        end
-        if update then
+        if new > 0 and (not current or
+                        (action == 'min' and new < current) or
+                        (action == 'max' and new > current)) then
             redis.call('HSET', KEYS[1], ARGV[i], new)
         end
     end
