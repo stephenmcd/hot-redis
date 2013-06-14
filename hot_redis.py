@@ -601,32 +601,28 @@ class Counter(Dict):
         kwargs = dict([(k, int(v)) for k, v in value.items()])
         return collections.Counter(**kwargs)
 
-    __add__       = op_left(operator.add)
-    __sub__       = op_left(operator.sub)
-    __and__       = op_left(operator.and_)
-    __or__        = op_left(operator.or_)
-    __radd__      = op_right(operator.add)
-    __rsub__      = op_right(operator.sub)
-    __rand__      = op_right(operator.and_)
-    __ror__       = op_right(operator.or_)
-
-    def __iadd__(self, value):
-        pass
-
-    def __isub__(self, value):
-        pass
-
-    def __iand__(self, value):
-        pass
-
-    def __ior__(self, value):
-        pass
+    __add__  = op_left(operator.add)
+    __sub__  = op_left(operator.sub)
+    __and__  = op_left(operator.and_)
+    __or__   = op_left(operator.or_)
+    __radd__ = op_right(operator.add)
+    __rsub__ = op_right(operator.sub)
+    __rand__ = op_right(operator.and_)
+    __ror__  = op_right(operator.or_)
+    __iadd__ = inplace("update")
+    __isub__ = inplace("subtract")
+    __iand__ = inplace("intersection_update")
+    __ior__  = inplace("union_update")
 
     def __delitem__(self, name):
         try:
             super(Counter, self).__delitem__(name)
         except KeyError:
             pass
+
+    def __repr__(self):
+        bits = (self.__class__.__name__, repr(dict(self.value)), self.key)
+        return "%s(%s, '%s')" % bits
 
     def values(self):
         values = super(Counter, self).values()
@@ -636,7 +632,7 @@ class Counter(Dict):
         value = self.hget(name)
         return int(value) if value is not None else default
 
-    def _update(self, value=None, multiplier=1, **kwargs):
+    def _merge(self, value=None, **kwargs):
         if value:
             try:
                 value.iteritems
@@ -646,8 +642,16 @@ class Counter(Dict):
             else:
                 for k in value:
                     kwargs[k] = kwargs.get(k, 0) + value[k]
-        for k in kwargs:
-            self.hincrby(k, kwargs[k] * multiplier)
+        return kwargs.items()
+
+    def _flatten(self, value, **kwargs):
+        for k, v in self._merge(value, **kwargs):
+            yield k
+            yield v
+
+    def _update(self, value, multiplier, **kwargs):
+        for k, v in self._merge(value, **kwargs):
+            self.hincrby(k, v * multiplier)
 
     def update(self, value=None, **kwargs):
         self._update(value, 1, **kwargs)
@@ -655,15 +659,21 @@ class Counter(Dict):
     def subtract(self, value=None, **kwargs):
         self._update(value, -1, **kwargs)
 
-    def intersection(self, value):
-        pass
+    def intersection_update(self, value=None, **kwargs):
+        self.counter_update("min", *self._flatten(value, **kwargs))
 
-    def union(self, value):
-        pass
+    def union_update(self, value=None, **kwargs):
+        self.counter_update("max", *self._flatten(value, **kwargs))
 
     def elements(self):
         for k, count in self.iteritems():
             for i in range(count):
                 yield k
+
+    def most_common(self, n=None):
+        values = sorted(self.iteritems(), key=lambda v: v[1], reverse=True)
+        if n:
+            values = values[:n]
+        return [v[0] for v in values]
 
 collections.MutableMapping.register(Counter)
