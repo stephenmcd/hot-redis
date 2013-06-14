@@ -838,8 +838,8 @@ class CounterTests(BaseTestCase):
         d = hot_redis.Counter(a)
         e = collections.Counter(**b)
         f = hot_redis.Counter(**b)
-        self.assertEquals(c, d)
-        self.assertEquals(e, f)
+        self.assertEquals(d, c)
+        self.assertEquals(f, e)
 
     def test_values(self):
         a = "wagwaan"
@@ -935,6 +935,7 @@ class CounterTests(BaseTestCase):
         c.subtract(**b)
         d.subtract(**b)
         self.assertEqual(d, c)
+
 
 if __name__ == "__main__":
     unittest.main()

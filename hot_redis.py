@@ -1,4 +1,5 @@
 
+import collections
 import operator
 import time
 import uuid
@@ -588,7 +589,7 @@ class DefaultDict(Dict):
         return self.setdefault(name, self.default_factory())
 
 
-class Counter(Dict, dict):
+class Counter(Dict):
 
     def __init__(self, value=None, key=None, **kwargs):
         super(Counter, self).__init__(key=key)
@@ -597,36 +598,17 @@ class Counter(Dict, dict):
     @property
     def value(self):
         value = super(Counter, self).value
-        return dict([(k, int(v)) for k, v in value.items()])
+        kwargs = dict([(k, int(v)) for k, v in value.items()])
+        return collections.Counter(**kwargs)
 
-    def values(self):
-        values = super(Counter, self).values()
-        return [int(v) for v in values]
-
-    def get(self, name, default=None):
-        value = self.hget(name)
-        return int(value) if value is not None else default
-
-    def __delitem__(self, name):
-        try:
-            super(Counter, self).__delitem__(name)
-        except KeyError:
-            pass
-
-    def __add__(self, value):
-        result = self.value
-        for k, v in self._merge(value):
-            result[k] = result.get(k, 0) + v
-        return result
-
-    def __sub__(self, value):
-        return self.subtract(value)
-
-    def __and__(self, value):
-        return self.intersection(value)
-
-    def __or__(self, value):
-        return self.union(value)
+    __add__       = op_left(operator.add)
+    __sub__       = op_left(operator.sub)
+    __and__       = op_left(operator.and_)
+    __or__        = op_left(operator.or_)
+    __radd__      = op_right(operator.add)
+    __rsub__      = op_right(operator.sub)
+    __rand__      = op_right(operator.and_)
+    __ror__       = op_right(operator.or_)
 
     def __iadd__(self, value):
         pass
@@ -640,7 +622,21 @@ class Counter(Dict, dict):
     def __ior__(self, value):
         pass
 
-    def _merge(self, value=None, **kwargs):
+    def __delitem__(self, name):
+        try:
+            super(Counter, self).__delitem__(name)
+        except KeyError:
+            pass
+
+    def values(self):
+        values = super(Counter, self).values()
+        return [int(v) for v in values]
+
+    def get(self, name, default=None):
+        value = self.hget(name)
+        return int(value) if value is not None else default
+
+    def _update(self, value=None, multiplier=1, **kwargs):
         if value:
             try:
                 value.iteritems
@@ -650,11 +646,8 @@ class Counter(Dict, dict):
             else:
                 for k in value:
                     kwargs[k] = kwargs.get(k, 0) + value[k]
-        return kwargs.items()
-
-    def _update(self, value=None, multiplier=1, **kwargs):
-        for k, v in self._merge(value, **kwargs):
-            self.hincrby(k, v * multiplier)
+        for k in kwargs:
+            self.hincrby(k, kwargs[k] * multiplier)
 
     def update(self, value=None, **kwargs):
         self._update(value, 1, **kwargs)
@@ -670,6 +663,7 @@ class Counter(Dict, dict):
 
     def elements(self):
         for k, count in self.iteritems():
-            for i in range(int(count)):
+            for i in range(count):
                 yield k
 
+collections.MutableMapping.register(Counter)
