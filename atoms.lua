@@ -158,14 +158,27 @@ function queue_put()
     return 1
 end
 
-function counter_update()
-    local action = table.remove(ARGV, 1)
+function counter_intersection_update()
+    local keys_values = redis.call('HGETALL', KEYS[1])
+    local all = {}
+    for i = 1, #keys_values, 2 do
+        all[keys_values[i]] = keys_values[i+1]
+    end
+    redis.call('DEL', KEYS[1])
+    for i = 1, #ARGV, 2 do
+        local current = tonumber(all[ARGV[i]])
+        local new = tonumber(ARGV[i+1])
+        if new > 0 and current then
+            redis.call('HSET', KEYS[1], ARGV[i], math.min(new, current))
+        end
+    end
+end
+
+function counter_union_update()
     for i = 1, #ARGV, 2 do
         local current = tonumber(redis.call('HGET', KEYS[1], ARGV[i]))
         local new = tonumber(ARGV[i+1])
-        if new > 0 and (not current or
-                        (action == 'min' and new < current) or
-                        (action == 'max' and new > current)) then
+        if new > 0 and (not current or new > current) then
             redis.call('HSET', KEYS[1], ARGV[i], new)
         end
     end

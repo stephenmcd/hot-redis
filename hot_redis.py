@@ -660,10 +660,10 @@ class Counter(Dict):
         self._update(value, -1, **kwargs)
 
     def intersection_update(self, value=None, **kwargs):
-        self.counter_update("min", *self._flatten(value, **kwargs))
+        self.counter_intersection_update(*self._flatten(value, **kwargs))
 
     def union_update(self, value=None, **kwargs):
-        self.counter_update("max", *self._flatten(value, **kwargs))
+        self.counter_union_update(*self._flatten(value, **kwargs))
 
     def elements(self):
         for k, count in self.iteritems():
@@ -674,6 +674,6 @@ class Counter(Dict):
         values = sorted(self.iteritems(), key=lambda v: v[1], reverse=True)
         if n:
             values = values[:n]
-        return [v[0] for v in values]
+        return values
 
 collections.MutableMapping.register(Counter)

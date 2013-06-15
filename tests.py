@@ -868,16 +868,6 @@ class CounterTests(BaseTestCase):
         a = hot_redis.Counter("wagwaan")
         del a["hotskull"]
 
-    def test_elements(self):
-        a = "wagwaan"
-        b = {"hotskull": 420}
-        c = collections.Counter(a)
-        d = hot_redis.Counter(a)
-        e = collections.Counter(**b)
-        f = hot_redis.Counter(**b)
-        self.assertItemsEqual(c.elements(), d.elements())
-        self.assertItemsEqual(e.elements(), f.elements())
-
     def test_update(self):
         a = "wagwaan"
         b = {"hotskull": 420}
@@ -935,6 +925,52 @@ class CounterTests(BaseTestCase):
         c.subtract(**b)
         d.subtract(**b)
         self.assertEqual(d, c)
+
+    def test_intersection(self):
+        a = "wagwaan"
+        b = "flute don"
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        c &= hot_redis.Counter(b)
+        d &= hot_redis.Counter(b)
+        self.assertEqual(d, c)
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        c &= collections.Counter(b)
+        d &= collections.Counter(b)
+        self.assertEqual(d, c)
+
+    def test_union(self):
+        a = "wagwaan"
+        b = "flute don"
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        c |= hot_redis.Counter(b)
+        d |= hot_redis.Counter(b)
+        self.assertEqual(d, c)
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        c |= collections.Counter(b)
+        d |= collections.Counter(b)
+        self.assertEqual(d, c)
+
+    def test_elements(self):
+        a = "wagwaan"
+        b = {"hotskull": 420}
+        c = collections.Counter(a)
+        d = hot_redis.Counter(a)
+        e = collections.Counter(**b)
+        f = hot_redis.Counter(**b)
+        self.assertItemsEqual(c.elements(), d.elements())
+        self.assertItemsEqual(e.elements(), f.elements())
+
+    def test_most_common(self):
+        a = "wagwaan"
+        b = collections.Counter(a)
+        c = hot_redis.Counter(a)
+        d = 420
+        self.assertEqual(c.most_common(d), b.most_common(d))
+        self.assertEqual(c.most_common(), b.most_common())
 
 
 if __name__ == "__main__":
