@@ -520,9 +520,12 @@ class Float(Numeric):
 
 class Queue(List):
 
-    def __init__(self, value=None, key=None, maxsize=0):
+    maxsize = 0
+
+    def __init__(self, value=None, key=None, maxsize=None):
         super(Queue, self).__init__(value=value, key=key)
-        self.maxsize = maxsize
+        if maxsize is not None:
+            self.maxsize = maxsize
 
     @property
     def queue(self):
@@ -601,6 +604,44 @@ class SetQueue(Queue):
 
 class LifoSetQueue(LifoQueue, SetQueue):
     pass
+
+
+class Sempahore(Queue):
+
+    maxsize = 1
+
+    def acquire(self, block=True, timeout=None):
+        self.put(1, block, timeout)
+
+    def release(self):
+        self.get()
+
+
+class Lock(Sempahore):
+
+    def __init__(self, value=None, key=None):
+        super(Lock, self).__init__(value=value, key=key)
+
+
+class RLock(Lock):
+
+    def __init__(self, *args, **kwargs):
+        self.acquires = 0
+        super(RLock, self).__init__(value=value, key=key)
+
+    def acquire(self, *args, **kwargs):
+        if self.acquires == 0:
+            try:
+                super(RLock, self).acquire(*args, **kwargs)
+            except QueueFull:
+                raise
+        self.acquires += 1
+
+    def release(self):
+        if self.acquires > 1:
+            self.acquires -= 1
+            if self.acquires == 0:
+                super(RLock, self).release()
 
 
 class DefaultDict(Dict):
