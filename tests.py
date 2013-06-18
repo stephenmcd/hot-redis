@@ -835,7 +835,7 @@ class QueueTests(BaseTestCase):
         q.get()
         self.assertEquals(q.qsize(), 1)
 
-    def test_lifo(self):
+    def test_lifo_queue(self):
         a = "wagwaan"
         b = "hotskull"
         q = hot_redis.LifoQueue()
@@ -845,6 +845,16 @@ class QueueTests(BaseTestCase):
         self.assertNotIn(b, q)
         self.assertEquals(a, q.get())
         self.assertNotIn(a, q)
+
+    def test_set_queue(self):
+        a = "wagwaan"
+        q = hot_redis.SetQueue()
+        q.put(a)
+        self.assertEquals(q.qsize(), 1)
+        q.put(a)
+        self.assertEquals(q.qsize(), 1)
+        self.assertEquals(q.get(), a)
+        self.assertEquals(q.qsize(), 0)
 
 
 class CounterTests(BaseTestCase):

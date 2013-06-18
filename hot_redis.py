@@ -579,6 +579,30 @@ class LifoQueue(Queue):
         self.lpush(item)
 
 
+class SetQueue(Queue):
+
+    def __init__(self, *args, **kwargs):
+        super(SetQueue, self).__init__(*args, **kwargs)
+        self.set = Set(key="%s-set" % self.key)
+
+    def get(self, *args, **kwargs):
+        item = super(SetQueue, self).get(*args, **kwargs)
+        self.set.remove(item)
+        return item
+
+    def put(self, item, *args, **kwargs):
+        if self.set.sadd(item) > 0:
+            super(SetQueue, self).put(item, *args, **kwargs)
+
+    def delete(self):
+        self._dispatch("delete")
+        self.set.delete()
+
+
+class LifoSetQueue(LifoQueue, SetQueue):
+    pass
+
+
 class DefaultDict(Dict):
 
     def __init__(self, default_factory, *args, **kwargs):
