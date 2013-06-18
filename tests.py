@@ -30,6 +30,9 @@ class ListTests(BaseTestCase):
         a = ["wagwaan", "hot", "skull"]
         self.assertEquals(hot_redis.List(a), a)
 
+    def test_empty(self):
+        self.assertEquals(hot_redis.List(), [])
+
     def test_iter(self):
         a = ["wagwaan", "hot", "skull"]
         for i, x in enumerate(hot_redis.List(a)):
@@ -173,6 +176,9 @@ class SetTests(BaseTestCase):
     def test_value(self):
         a = set(["wagwaan", "hot", "skull"])
         self.assertEquals(hot_redis.Set(a), a)
+
+    def test_empty(self):
+        self.assertEquals(hot_redis.Set(), set())
 
     def test_add(self):
         a = set(["wagwaan", "hot", "skull"])
@@ -360,6 +366,9 @@ class DictTests(BaseTestCase):
         a = {"wagwaan": "popcaan", "flute": "don"}
         self.assertEquals(hot_redis.Dict(a), a)
 
+    def test_empty(self):
+        self.assertEquals(hot_redis.Dict(), {})
+
     def test_update(self):
         a = {"wagwaan": "popcaan", "flute": "don"}
         b = {"wagwaan": "hotskull", "nba": "hangtime"}
@@ -467,6 +476,9 @@ class StringTests(BaseTestCase):
         a = "wagwaan"
         self.assertEquals(hot_redis.String(a), a)
 
+    def test_empty(self):
+        self.assertEquals(hot_redis.String(), "")
+
     def test_add(self):
         a = "wagwaan"
         b = "hotskull"
@@ -544,6 +556,9 @@ class IntTests(BaseTestCase):
     def test_value(self):
         a = 420
         self.assertEquals(hot_redis.Int(a), a)
+
+    def test_empty(self):
+        self.assertEquals(hot_redis.Int(), 0)
 
     def test_add(self):
         a = 420
@@ -679,6 +694,9 @@ class FloatTests(BaseTestCase):
     def test_value(self):
         a = 420.666
         self.assertAlmostEqual(hot_redis.Float(a), a)
+
+    def test_empty(self):
+        self.assertEquals(hot_redis.Int(), .0)
 
     def test_add(self):
         a = 420.666
@@ -840,6 +858,9 @@ class CounterTests(BaseTestCase):
         f = hot_redis.Counter(**b)
         self.assertEquals(d, c)
         self.assertEquals(f, e)
+
+    def test_empty(self):
+        self.assertEquals(hot_redis.Counter(), collections.Counter())
 
     def test_values(self):
         a = "wagwaan"

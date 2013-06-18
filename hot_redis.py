@@ -429,7 +429,7 @@ class String(Sequential):
 
     @property
     def value(self):
-        return self.get()
+        return self.get() or ""
 
     @value.setter
     def value(self, value):
@@ -486,7 +486,7 @@ class Int(Numeric, Bitwise):
 
     @property
     def value(self):
-        return int(float(self.get()))
+        return int(float(self.get() or 0))
 
     @value.setter
     def value(self, value):
@@ -504,7 +504,7 @@ class Float(Numeric):
 
     @property
     def value(self):
-        return float(self.get())
+        return float(self.get() or 0)
 
     @value.setter
     def value(self, value):
