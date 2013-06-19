@@ -606,18 +606,41 @@ class LifoSetQueue(LifoQueue, SetQueue):
     pass
 
 
-class Sempahore(Queue):
+class BoundedSemaphore(Queue):
 
     maxsize = 1
 
     def acquire(self, block=True, timeout=None):
-        self.put(1, block, timeout)
+        try:
+            self.put(1, block, timeout)
+        except QueueFull:
+            return False
+        self.acquired = True
+        return True
 
     def release(self):
+        if not getattr(self, "acquired", False):
+            raise RuntimeError("Cannot release unacquired lock")
+        self.acquired = False
         self.get()
 
+    def __enter__(self):
+        self.acquire()
 
-class Lock(Sempahore):
+    def __exit__(self, t, v, tb):
+        self.release()
+
+
+class Semaphore(BoundedSemaphore):
+
+    def release(self):
+        try:
+            super(Semaphore, self).release()
+        except RuntimeError:
+            pass
+
+
+class Lock(BoundedSemaphore):
 
     def __init__(self, value=None, key=None):
         super(Lock, self).__init__(value=value, key=key)
@@ -627,21 +650,22 @@ class RLock(Lock):
 
     def __init__(self, *args, **kwargs):
         self.acquires = 0
-        super(RLock, self).__init__(value=value, key=key)
+        super(RLock, self).__init__(*args, **kwargs)
 
     def acquire(self, *args, **kwargs):
+        result = True
         if self.acquires == 0:
-            try:
-                super(RLock, self).acquire(*args, **kwargs)
-            except QueueFull:
-                raise
-        self.acquires += 1
+            result = super(RLock, self).acquire(*args, **kwargs)
+        if result:
+            self.acquires += 1
+        return result
 
     def release(self):
         if self.acquires > 1:
             self.acquires -= 1
-            if self.acquires == 0:
-                super(RLock, self).release()
+            if self.acquires > 0:
+                return
+        super(RLock, self).release()
 
 
 class DefaultDict(Dict):
