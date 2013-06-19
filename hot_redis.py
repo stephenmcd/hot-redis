@@ -56,10 +56,10 @@ def inplace(method_name):
 
 class Base(object):
 
-    def __init__(self, value=None, key=None):
+    def __init__(self, initial=None, key=None):
         self.key = key or str(uuid.uuid4())
-        if value:
-            self.value = value
+        if initial:
+            self.value = initial
 
     __eq__ = op_left(operator.eq)
     __lt__ = op_left(operator.lt)
@@ -522,10 +522,10 @@ class Queue(List):
 
     maxsize = 0
 
-    def __init__(self, value=None, key=None, maxsize=None):
-        super(Queue, self).__init__(value=value, key=key)
+    def __init__(self, maxsize=None, initial=None, key=None):
         if maxsize is not None:
             self.maxsize = maxsize
+        super(Queue, self).__init__(initial=initial, key=key)
 
     @property
     def queue(self):
@@ -610,6 +610,9 @@ class BoundedSemaphore(Queue):
 
     maxsize = 1
 
+    def __init__(self, value=None, initial=None, key=None):
+        super(BoundedSemaphore, self).__init__(value, initial, key)
+
     def acquire(self, block=True, timeout=None):
         try:
             self.put(1, block, timeout)
@@ -642,8 +645,8 @@ class Semaphore(BoundedSemaphore):
 
 class Lock(BoundedSemaphore):
 
-    def __init__(self, value=None, key=None):
-        super(Lock, self).__init__(value=value, key=key)
+    def __init__(self, initial=None, key=None):
+        super(Lock, self).__init__(initial=initial, key=key)
 
 
 class RLock(Lock):
@@ -680,9 +683,9 @@ class DefaultDict(Dict):
 
 class Counter(Dict):
 
-    def __init__(self, value=None, key=None, **kwargs):
+    def __init__(self, iterable=None, key=None, **kwargs):
         super(Counter, self).__init__(key=key)
-        self.update(value=value, **kwargs)
+        self.update(iterable=iterable, **kwargs)
 
     @property
     def value(self):
@@ -721,38 +724,38 @@ class Counter(Dict):
         value = self.hget(name)
         return int(value) if value is not None else default
 
-    def _merge(self, value=None, **kwargs):
-        if value:
+    def _merge(self, iterable=None, **kwargs):
+        if iterable:
             try:
-                value.iteritems
+                items = iterable.iteritems()
             except AttributeError:
-                for k in value:
+                for k in iterable:
                     kwargs[k] = kwargs.get(k, 0) + 1
             else:
-                for k in value:
-                    kwargs[k] = kwargs.get(k, 0) + value[k]
+                for k, v in items:
+                    kwargs[k] = kwargs.get(k, 0) + v
         return kwargs.items()
 
-    def _flatten(self, value, **kwargs):
-        for k, v in self._merge(value, **kwargs):
+    def _flatten(self, iterable, **kwargs):
+        for k, v in self._merge(iterable, **kwargs):
             yield k
             yield v
 
-    def _update(self, value, multiplier, **kwargs):
-        for k, v in self._merge(value, **kwargs):
+    def _update(self, iterable, multiplier, **kwargs):
+        for k, v in self._merge(iterable, **kwargs):
             self.hincrby(k, v * multiplier)
 
-    def update(self, value=None, **kwargs):
-        self._update(value, 1, **kwargs)
+    def update(self, iterable=None, **kwargs):
+        self._update(iterable, 1, **kwargs)
 
-    def subtract(self, value=None, **kwargs):
-        self._update(value, -1, **kwargs)
+    def subtract(self, iterable=None, **kwargs):
+        self._update(iterable, -1, **kwargs)
 
-    def intersection_update(self, value=None, **kwargs):
-        self.counter_intersection_update(*self._flatten(value, **kwargs))
+    def intersection_update(self, iterable=None, **kwargs):
+        self.counter_intersection_update(*self._flatten(iterable, **kwargs))
 
-    def union_update(self, value=None, **kwargs):
-        self.counter_union_update(*self._flatten(value, **kwargs))
+    def union_update(self, iterable=None, **kwargs):
+        self.counter_union_update(*self._flatten(iterable, **kwargs))
 
     def elements(self):
         for k, count in self.iteritems():
