@@ -27,29 +27,29 @@ def load_lua_scripts():
 load_lua_scripts()
 
 
-def value_left(self, value):
-    return value.value if isinstance(value, self.__class__) else value
+def value_left(self, other):
+    return other.value if isinstance(other, self.__class__) else other
 
 
-def value_right(self, value):
-    return self if isinstance(value, self.__class__) else self.value
+def value_right(self, other):
+    return self if isinstance(other, self.__class__) else self.value
 
 
 def op_left(op):
-    def method(self, value):
-        return op(self.value, value_left(self, value))
+    def method(self, other):
+        return op(self.value, value_left(self, other))
     return method
 
 
 def op_right(op):
-    def method(self, value):
-        return op(value_left(self, value), value_right(self, value))
+    def method(self, other):
+        return op(value_left(self, other), value_right(self, other))
     return method
 
 
 def inplace(method_name):
-    def method(self, value):
-        getattr(self, method_name)(value_left(self, value))
+    def method(self, other):
+        getattr(self, method_name)(value_left(self, other))
         return self
     return method
 
@@ -163,9 +163,9 @@ class List(Sequential):
     def __len__(self):
         return self.llen()
 
-    def __setitem__(self, i, value):
+    def __setitem__(self, i, item):
         try:
-            self.lset(i, value)
+            self.lset(i, item)
         except redis.exceptions.ResponseError:
             raise IndexError
 
@@ -185,14 +185,14 @@ class List(Sequential):
     def __iter__(self):
         return iter(self.value)
 
-    def append(self, value):
-        self.extend([value])
+    def append(self, item):
+        self.extend([item])
 
-    def extend(self, l):
-        self.rpush(*l)
+    def extend(self, other):
+        self.rpush(*other)
 
-    def insert(self, i, value):
-        self.list_insert(i, value)
+    def insert(self, i, item):
+        self.list_insert(i, item)
 
     def pop(self, i=-1):
         if i == -1:
@@ -205,11 +205,11 @@ class List(Sequential):
     def reverse(self):
         self.list_reverse()
 
-    def index(self, value):
-        return self.value.index(value)
+    def index(self, item):
+        return self.value.index(item)
 
-    def count(self, value):
-        return self.value.count(value)
+    def count(self, item):
+        return self.value.count(item)
 
     def sort(self, reverse=False):
         self._dispatch("sort")(desc=reverse, store=self.key, alpha=True)
@@ -222,14 +222,14 @@ class Set(Bitwise):
         return self.smembers()
 
     @value.setter
-    def value(self, value):
-        self.update(value)
+    def value(self, item):
+        self.update(item)
 
-    def _all_redis(self, values):
-        return all([isinstance(value, self.__class__) for value in values])
+    def _all_redis(self, sets):
+        return all([isinstance(s, self.__class__) for s in sets])
 
-    def _to_keys(self, values):
-        return [value.key for value in values]
+    def _to_keys(self, sets):
+        return [s.key for s in sets]
 
     __iand__ = inplace("intersection_update")
     __ior__  = inplace("update")
@@ -252,17 +252,17 @@ class Set(Bitwise):
     def __len__(self):
         return self.scard()
 
-    def __contains__(self, value):
-        return self.sismember(value)
+    def __contains__(self, item):
+        return self.sismember(item)
 
     def __iter__(self):
         return iter(self.value)
 
-    def add(self, value):
-        self.update([value])
+    def add(self, item):
+        self.update([item])
 
-    def update(self, *values):
-        self.sadd(*reduce(operator.or_, values))
+    def update(self, *sets):
+        self.sadd(*reduce(operator.or_, sets))
 
     def pop(self):
         return self.spop()
@@ -270,74 +270,75 @@ class Set(Bitwise):
     def clear(self):
         self.delete()
 
-    def remove(self, value):
-        if self.srem(value) == 0:
-            raise KeyError(value)
+    def remove(self, item):
+        if self.srem(item) == 0:
+            raise KeyError(item)
 
-    def discard(self, value):
+    def discard(self, item):
         try:
-            self.remove(value)
+            self.remove(item)
         except KeyError:
             pass
 
-    def intersection(self, *values):
-        if self._all_redis(values):
-            return self.sinter(*self._to_keys(values))
+    def intersection(self, *sets):
+        if self._all_redis(sets):
+            return self.sinter(*self._to_keys(sets))
         else:
-            return reduce(operator.and_, (self.value,) + values)
+            return reduce(operator.and_, (self.value,) + sets)
 
-    def intersection_update(self, *values):
-        if self._all_redis(values):
-            self.sinterstore(self.key, *self._to_keys(values))
+    def intersection_update(self, *sets):
+        if self._all_redis(sets):
+            self.sinterstore(self.key, *self._to_keys(sets))
         else:
-            values = list(reduce(operator.and_, values))
-            self.set_intersection_update(*values)
+            sets = list(reduce(operator.and_, sets))
+            self.set_intersection_update(*sets)
         return self
 
-    def union(self, *values):
-        if self._all_redis(values):
-            return self.sunion(*self._to_keys(values))
+    def union(self, *sets):
+        if self._all_redis(sets):
+            return self.sunion(*self._to_keys(sets))
         else:
-            return reduce(operator.or_, (self.value,) + values)
+            return reduce(operator.or_, (self.value,) + sets)
 
-    def difference(self, *values):
-        if self._all_redis(values):
-            return self.sdiff(*self._to_keys(values))
+    def difference(self, *sets):
+        if self._all_redis(sets):
+            return self.sdiff(*self._to_keys(sets))
         else:
-            return reduce(operator.sub, (self.value,) + values)
+            return reduce(operator.sub, (self.value,) + sets)
 
-    def difference_update(self, *values):
-        if self._all_redis(values):
-            self.sdiffstore(self.key, *self._to_keys(values))
+    def difference_update(self, *sets):
+        if self._all_redis(sets):
+            self.sdiffstore(self.key, *self._to_keys(sets))
         else:
-            all_values = [str(uuid.uuid4())]
-            for value in values:
-                all_values.extend(value)
-                all_values.append(all_values[0])
-            self.set_difference_update(*all_values)
+            key = str(uuid.uuid4())
+            flattened = [key]
+            for s in sets:
+                flattened.extend(s)
+                flattened.append(key)
+            self.set_difference_update(*flattened)
         return self
 
-    def symmetric_difference(self, value):
-        if isinstance(value, self.__class__):
-            return set(self.set_symmetric_difference("return", value.key))
+    def symmetric_difference(self, other):
+        if isinstance(other, self.__class__):
+            return set(self.set_symmetric_difference("return", other.key))
         else:
-            return self.value ^ value
+            return self.value ^ other
 
-    def symmetric_difference_update(self, value):
-        if isinstance(value, self.__class__):
-            self.set_symmetric_difference("update", value.key)
+    def symmetric_difference_update(self, other):
+        if isinstance(other, self.__class__):
+            self.set_symmetric_difference("update", other.key)
         else:
-            self.set_symmetric_difference("create", *value)
+            self.set_symmetric_difference("create", *other)
         return self
 
-    def isdisjoint(self, value):
-        return not self.intersection(value)
+    def isdisjoint(self, other):
+        return not self.intersection(other)
 
-    def issubset(self, value):
-        return self <= value
+    def issubset(self, other):
+        return self <= other
 
-    def issuperset(self, value):
-        return self >= value
+    def issuperset(self, other):
+        return self >= other
 
 
 class Dict(Base):
@@ -359,24 +360,24 @@ class Dict(Base):
     def __len__(self):
         return self.hlen()
 
-    def __contains__(self, name):
-        return self.hexists(name)
+    def __contains__(self, key):
+        return self.hexists(key)
 
     def __iter__(self):
         return self.iterkeys()
 
-    def __setitem__(self, name, value):
-        self.hset(name, value)
+    def __setitem__(self, key, value):
+        self.hset(key, value)
 
-    def __getitem__(self, name):
-        value = self.get(name)
+    def __getitem__(self, key):
+        value = self.get(key)
         if value is None:
-            raise KeyError(name)
+            raise KeyError(key)
         return value
 
-    def __delitem__(self, name):
-        if self.hdel(name) == 0:
-            raise KeyError(name)
+    def __delitem__(self, key):
+        if self.hdel(key) == 0:
+            raise KeyError(key)
 
     def update(self, value):
         self.hmset(value)
@@ -399,18 +400,18 @@ class Dict(Base):
     def iteritems(self):
         return iter(self.items())
 
-    def setdefault(self, name, value=None):
-        if self.hsetnx(name, value) == 1:
+    def setdefault(self, key, value=None):
+        if self.hsetnx(key, value) == 1:
             return value
         else:
-            return self.get(name)
+            return self.get(key)
 
-    def get(self, name, default=None):
-        value = self.hget(name)
+    def get(self, key, default=None):
+        value = self.hget(key)
         return value if value is not None else default
 
-    def has_key(self, name):
-        return name in self
+    def has_key(self, key):
+        return key in self
 
     def copy(self):
         return self.__class__(self.value)
@@ -442,27 +443,27 @@ class String(Sequential):
     def __len__(self):
         return self.strlen()
 
-    def __setitem__(self, i, value):
+    def __setitem__(self, i, s):
         if isinstance(i, slice):
             start = i.start if i.start is not None else 0
             stop = i.stop
         else:
             start = i
             stop = None
-        if stop is not None and stop < start + len(value):
-            self.string_setitem(start, stop, value)
+        if stop is not None and stop < start + len(s):
+            self.string_setitem(start, stop, s)
         else:
-            self.setrange(start, value)
+            self.setrange(start, s)
 
     def __getitem__(self, i):
         if not isinstance(i, slice):
             i = slice(i, i + 1)
         start = i.start if i.start is not None else 0
         stop = i.stop if i.stop is not None else 0
-        value = self.getrange(start, stop - 1)
-        if not value:
+        s = self.getrange(start, stop - 1)
+        if not s:
             raise IndexError
-        return value
+        return s
 
     def __iter__(self):
         return iter(self.value)
@@ -470,8 +471,8 @@ class String(Sequential):
 
 class ImmutableString(String):
 
-    def __iadd__(self, s):
-        self.key = self.__class__(self + s).key
+    def __iadd__(self, other):
+        self.key = self.__class__(self + other).key
         return self
 
     def __imul__(self, i):
@@ -677,8 +678,8 @@ class DefaultDict(Dict):
         self.default_factory = default_factory
         super(DefaultDict, self).__init__(*args, **kwargs)
 
-    def __getitem__(self, name):
-        return self.setdefault(name, self.default_factory())
+    def __getitem__(self, key):
+        return self.setdefault(key, self.default_factory())
 
 
 class Counter(Dict):
@@ -720,8 +721,8 @@ class Counter(Dict):
         values = super(Counter, self).values()
         return [int(v) for v in values]
 
-    def get(self, name, default=None):
-        value = self.hget(name)
+    def get(self, key, default=None):
+        value = self.hget(key)
         return int(value) if value is not None else default
 
     def _merge(self, iterable=None, **kwargs):
