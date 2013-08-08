@@ -7,24 +7,31 @@ from Queue import Empty as QueueEmpty, Full as QueueFull
 import redis
 
 
-client = redis.Redis()
-lua_scripts = {}
+REQUIRES_LUABIT = ("number_and", "number_or", "number_xor",
+                   "number_lshift", "number_rshift")
 
-def load_lua_scripts():
-    with open("bit.lua", "r") as f:
-        luabit = f.read()
-    with open("atoms.lua", "r") as f:
-        for func in f.read().strip().split("function "):
-            if func:
-                name, code = func.split("\n", 1)
-                name = name.split("(")[0].strip()
-                code = code.rsplit("end", 1)[0].strip()
-                if name in ("number_and", "number_or", "number_xor",
-                            "number_lshift", "number_rshift"):
-                    code = luabit + code
-                lua_scripts[name] = client.register_script(code)
+class HotClient(redis.Redis):
 
-load_lua_scripts()
+    class __metaclass__():
+
+    def __init__(self, *args, **kwargs):
+        super(HotClient, self).__init__(*args, **kwargs)
+        with open("bit.lua", "r") as f:
+            luabit = f.read()
+        with open("atoms.lua", "r") as f:
+            for func in f.read().strip().split("function "):
+                if func:
+                    name, code = func.split("\n", 1)
+                    name = name.split("(")[0].strip()
+                    code = code.rsplit("end", 1)[0].strip()
+                    if name in REQUIRES_LUABIT:
+                        code = luabit + code
+                    setattr(self, name, self.register_script(code))
+
+    @classmethod
+    def add_lua_function(cls, ):
+
+client = HotClient()
 
 
 def value_left(self, other):
