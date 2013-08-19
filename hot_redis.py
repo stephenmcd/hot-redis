@@ -7,29 +7,42 @@ from Queue import Empty as QueueEmpty, Full as QueueFull
 import redis
 
 
-REQUIRES_LUABIT = ("number_and", "number_or", "number_xor",
-                   "number_lshift", "number_rshift")
-
 class HotClient(redis.Redis):
-
-    class __metaclass__():
 
     def __init__(self, *args, **kwargs):
         super(HotClient, self).__init__(*args, **kwargs)
+        requires_luabit = ("number_and", "number_or", "number_xor",
+                           "number_lshift", "number_rshift")
         with open("bit.lua", "r") as f:
             luabit = f.read()
+        for name, snippet in self._get_lua_funcs():
+            if name in requires_luabit:
+                snippet = luabit + snippet
+            self._create_lua_method(name, snippet)
+
+    def _get_lua_funcs(self):
+        """
+        Returns the name / code snippet pair for each Lua function
+        in the atoms.lua file.
+        """
         with open("atoms.lua", "r") as f:
             for func in f.read().strip().split("function "):
                 if func:
-                    name, code = func.split("\n", 1)
-                    name = name.split("(")[0].strip()
-                    code = code.rsplit("end", 1)[0].strip()
-                    if name in REQUIRES_LUABIT:
-                        code = luabit + code
-                    setattr(self, name, self.register_script(code))
+                    bits = func.split("\n", 1)
+                    name = bits[0].split("(")[0].strip()
+                    snippet = bits[1].rsplit("end", 1)[0].strip()
+                    yield name, snippet
 
-    @classmethod
-    def add_lua_function(cls, ):
+    def _create_lua_method(self, name, code):
+        """
+        Registers the code snippet as a Lua script, and binds the
+        script to the client as a method that can be called with
+        the same signature as regular client methodds, eg with a
+        single key arg.
+        """
+        script = self.register_script(code)
+        method = lambda key, *a, **k: script(keys=[key], args=a, **k)
+        setattr(self, name, method)
 
 client = HotClient()
 
@@ -85,22 +98,8 @@ class Base(object):
         try:
             func = getattr(client, name)
         except AttributeError:
-            pass
-        else:
-            return lambda *a, **k: func(self.key, *a, **k)
-        try:
-            func = lua_scripts[name]
-        except KeyError:
-            pass
-        else:
-            return lambda *a, **k: func(keys=[self.key], args=a, **k)
-        try:
-            func = getattr(self.value, name)
-        except KeyError:
-            pass
-        else:
-            return func
-        raise AttributeError(name)
+            raise
+        return lambda *a, **k: func(self.key, *a, **k)
 
 
 class Bitwise(Base):
