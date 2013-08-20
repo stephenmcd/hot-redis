@@ -8,6 +8,10 @@ import redis
 
 
 class HotClient(redis.Redis):
+    """
+    A Redis client wrapper that loads Lua functions and creates
+    client methods for calling them.
+    """
 
     def __init__(self, *args, **kwargs):
         super(HotClient, self).__init__(*args, **kwargs)
@@ -47,34 +51,75 @@ class HotClient(redis.Redis):
 client = HotClient()
 
 
+####################################################################
+#                                                                  #
+#  The following functions are all used for creating methods that  #
+#  get assigned to all the magic operator names for each type,     #
+#  and make much more sense further down where they're applied.    #
+#                                                                  #
+####################################################################
+
 def value_left(self, other):
+    """
+    Returns the value of the other type instance to use in an
+    operator method, namely when the method's instance is on the
+    left side of the expression.
+    """
     return other.value if isinstance(other, self.__class__) else other
 
 
 def value_right(self, other):
+    """
+    Returns the value of the type instance calling an to use in an
+    operator method, namely when the method's instance is on the
+    left side of the expression.
+    """
     return self if isinstance(other, self.__class__) else self.value
 
 
 def op_left(op):
+    """
+    Returns a type instance method for the given operator, applied
+    when the instance appears on the left side of the expression.
+    """
     def method(self, other):
         return op(self.value, value_left(self, other))
     return method
 
 
 def op_right(op):
+    """
+    Returns a type instance method for the given operator, applied
+    when the instance appears on the right side of the expression.
+    """
     def method(self, other):
         return op(value_left(self, other), value_right(self, other))
     return method
 
 
 def inplace(method_name):
+    """
+    Returns a type instance method that will call the given method
+    name, used for inplace operators such as __iadd__ and __imul__.
+    """
     def method(self, other):
         getattr(self, method_name)(value_left(self, other))
         return self
     return method
 
 
+#####################################################################
+#                                                                   #
+#  Base class / groupings of logical operators that types inherit.  #
+#                                                                   #
+#####################################################################
+
 class Base(object):
+    """
+    Base type that all others inherit. Contains the basic comparison
+    operators as well as the dispatch for proxying to methods on the
+    Redis client.
+    """
 
     def __init__(self, initial=None, key=None):
         self.key = key or str(uuid.uuid4())
@@ -103,7 +148,9 @@ class Base(object):
 
 
 class Bitwise(Base):
-
+    """
+    Base class for bitwise types and relevant operators.
+    """
     __and__       = op_left(operator.and_)
     __or__        = op_left(operator.or_)
     __xor__       = op_left(operator.xor)
@@ -117,7 +164,9 @@ class Bitwise(Base):
 
 
 class Sequential(Base):
-
+    """
+    Base class for sequence types and relevant operators.
+    """
     __add__       = op_left(operator.add)
     __mul__       = op_left(operator.mul)
     __radd__      = op_right(operator.add)
@@ -125,7 +174,9 @@ class Sequential(Base):
 
 
 class Numeric(Base):
-
+    """
+    Base class for numeric types and relevant operators.
+    """
     __add__       = op_left(operator.add)
     __sub__       = op_left(operator.sub)
     __mul__       = op_left(operator.mul)
@@ -153,7 +204,16 @@ class Numeric(Base):
     __ipow__      = inplace("number_pow")
 
 
+####################################################
+#                                                  #
+#  Python types that map directly to Redis types.  #
+#                                                  #
+####################################################
+
 class List(Sequential):
+    """
+    Redis list <-> Python list
+    """
 
     @property
     def value(self):
@@ -222,6 +282,9 @@ class List(Sequential):
 
 
 class Set(Bitwise):
+    """
+    Redis set <-> Python set
+    """
 
     @property
     def value(self):
@@ -348,6 +411,9 @@ class Set(Bitwise):
 
 
 class Dict(Base):
+    """
+    Redis hash <-> Python dict
+    """
 
     @property
     def value(self):
@@ -433,6 +499,9 @@ class Dict(Base):
 
 
 class String(Sequential):
+    """
+    Redis string <-> Python string (although mutable).
+    """
 
     @property
     def value(self):
@@ -476,6 +545,9 @@ class String(Sequential):
 
 
 class ImmutableString(String):
+    """
+    Redis string <-> Python string (actually immutable).
+    """
 
     def __iadd__(self, other):
         self.key = self.__class__(self + other).key
@@ -490,6 +562,9 @@ class ImmutableString(String):
 
 
 class Int(Numeric, Bitwise):
+    """
+    Redis integer <-> Python integer.
+    """
 
     @property
     def value(self):
@@ -508,6 +583,9 @@ class Int(Numeric, Bitwise):
 
 
 class Float(Numeric):
+    """
+    Redis float <-> Python float.
+    """
 
     @property
     def value(self):
@@ -525,7 +603,18 @@ class Float(Numeric):
         return self
 
 
+#####################################################################
+#                                                                   #
+#  Following are the actual Higher Order Types - generally things   #
+#  found in the Python standard library that can be represented by  #
+#  extending / composing the above types. First up: Queue module.   #
+#                                                                   #
+#####################################################################
+
 class Queue(List):
+    """
+    Redis list <-> Python list <-> Python's Queue.Queue.
+    """
 
     maxsize = 0
 
@@ -584,12 +673,18 @@ class Queue(List):
 
 
 class LifoQueue(Queue):
+    """
+    Redis list <-> Python list <-> Python's Queue.LifoQueue.
+    """
 
     def append(self, item):
         self.lpush(item)
 
 
 class SetQueue(Queue):
+    """
+    Redis list + Redis set <-> Queue with only unique items.
+    """
 
     def __init__(self, *args, **kwargs):
         super(SetQueue, self).__init__(*args, **kwargs)
@@ -610,10 +705,28 @@ class SetQueue(Queue):
 
 
 class LifoSetQueue(LifoQueue, SetQueue):
+    """
+    Redis list + Redis set <-> LifoQueue with only unique items.
+    """
     pass
 
 
+####################################################################
+#                                                                  #
+#  Next up, some lock structures from the threading module. These  #
+#  are all backed by the above Queue class, since it provides the  #
+#  blocking / non-blocking mechanics desired.                      #
+#                                                                  #
+####################################################################
+
 class BoundedSemaphore(Queue):
+    """
+    Redis list <-> Python list <-> Queue <-> threading.BoundedSemaphore.
+
+    BoundedSemaphore's ``value`` arg maps to Queue's ``maxsize``.
+    BoundedSemaphore's acquire/release methods maps to Queue's put/get
+    methods repectively, providing blocking/timeout mechanics.
+    """
 
     maxsize = 1
 
@@ -642,6 +755,11 @@ class BoundedSemaphore(Queue):
 
 
 class Semaphore(BoundedSemaphore):
+    """
+    Redis list <-> Python list <-> Queue <-> threading.Semaphore.
+
+    Same implementation as BoundedSemaphore, but without a queue size.
+    """
 
     def release(self):
         try:
@@ -651,12 +769,25 @@ class Semaphore(BoundedSemaphore):
 
 
 class Lock(BoundedSemaphore):
+    """
+    Redis list <-> Python list <-> Queue <-> threading.Lock.
+
+    Same implementation as BoundedSemaphore, but with a fixed
+    queue size of 1.
+    """
 
     def __init__(self, initial=None, key=None):
         super(Lock, self).__init__(initial=initial, key=key)
 
 
 class RLock(Lock):
+    """
+    Redis list <-> Python list <-> Queue <-> threading.RLock.
+
+    Same implementation as BoundedSemaphore, but with a fixed
+    queue size of 1, and as per re-entrant locks, can be acquired
+    multiple times.
+    """
 
     def __init__(self, *args, **kwargs):
         self.acquires = 0
@@ -678,7 +809,17 @@ class RLock(Lock):
         super(RLock, self).release()
 
 
+#####################################################################
+#                                                                   #
+#  Some members from Python's collections standard library module.  #
+#                                                                   #
+#####################################################################
+
+
 class DefaultDict(Dict):
+    """
+    Redis hash <-> Python dict <-> Python's collections.DefaultDict.
+    """
 
     def __init__(self, default_factory, *args, **kwargs):
         self.default_factory = default_factory
@@ -689,6 +830,9 @@ class DefaultDict(Dict):
 
 
 class Counter(Dict):
+    """
+    Redis hash <-> Python dict <-> Python's collections.Counter.
+    """
 
     def __init__(self, iterable=None, key=None, **kwargs):
         super(Counter, self).__init__(key=key)
