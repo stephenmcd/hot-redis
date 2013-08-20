@@ -829,18 +829,18 @@ class DefaultDict(Dict):
         return self.setdefault(key, self.default_factory())
 
 
-class Counter(Dict):
+class MultiSet(Dict):
     """
     Redis hash <-> Python dict <-> Python's collections.Counter.
     """
 
     def __init__(self, iterable=None, key=None, **kwargs):
-        super(Counter, self).__init__(key=key)
+        super(MultiSet, self).__init__(key=key)
         self.update(iterable=iterable, **kwargs)
 
     @property
     def value(self):
-        value = super(Counter, self).value
+        value = super(MultiSet, self).value
         kwargs = dict([(k, int(v)) for k, v in value.items()])
         return collections.Counter(**kwargs)
 
@@ -859,7 +859,7 @@ class Counter(Dict):
 
     def __delitem__(self, name):
         try:
-            super(Counter, self).__delitem__(name)
+            super(MultiSet, self).__delitem__(name)
         except KeyError:
             pass
 
@@ -868,7 +868,7 @@ class Counter(Dict):
         return "%s(%s, '%s')" % bits
 
     def values(self):
-        values = super(Counter, self).values()
+        values = super(MultiSet, self).values()
         return [int(v) for v in values]
 
     def get(self, key, default=None):
@@ -903,10 +903,10 @@ class Counter(Dict):
         self._update(iterable, -1, **kwargs)
 
     def intersection_update(self, iterable=None, **kwargs):
-        self.counter_intersection_update(*self._flatten(iterable, **kwargs))
+        self.multiset_intersection_update(*self._flatten(iterable, **kwargs))
 
     def union_update(self, iterable=None, **kwargs):
-        self.counter_union_update(*self._flatten(iterable, **kwargs))
+        self.multiset_union_update(*self._flatten(iterable, **kwargs))
 
     def elements(self):
         for k, count in self.iteritems():
@@ -919,4 +919,4 @@ class Counter(Dict):
             values = values[:n]
         return values
 
-collections.MutableMapping.register(Counter)
+collections.MutableMapping.register(MultiSet)

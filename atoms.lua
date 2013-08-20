@@ -158,7 +158,7 @@ function queue_put()
     return 1
 end
 
-function counter_intersection_update()
+function multiset_intersection_update()
     local keys_values = redis.call('HGETALL', KEYS[1])
     local all = {}
     for i = 1, #keys_values, 2 do
@@ -174,7 +174,7 @@ function counter_intersection_update()
     end
 end
 
-function counter_union_update()
+function multiset_union_update()
     for i = 1, #ARGV, 2 do
         local current = tonumber(redis.call('HGET', KEYS[1], ARGV[i]))
         local new = tonumber(ARGV[i+1])
