@@ -65,10 +65,10 @@ The last interaction here is an interesting one. Python's ``list.reverse()`` is 
 Data Types
 ==========
 
-The following table is the complete list of types provided by Hot Redis, mapped to their Python counterparts and underlying Redis types, along with any special considerations worth noting.
+The following table is the complete list of types provided by HOT Redis, mapped to their Python counterparts and underlying Redis types, along with any special considerations worth noting.
 
 ==================  ============================  ==========  ===============
-Hot Redis           Python                        Redis       Notes
+HOT Redis           Python                        Redis       Notes
 ==================  ============================  ==========  ===============
 List                list                          list
 Set                 set                           set
