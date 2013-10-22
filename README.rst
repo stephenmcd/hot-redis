@@ -10,6 +10,8 @@ These types are then backed by Redis, allowing objects to be manipulated atomica
 
 The name HOT Redis originally stood for "Higher Order Types for Redis", but since the implementation doesn't strictly fit the definition, the recursive acronym "HOT Object Toolkit for Redis" should appease the most luscious of bearded necks.
 
+HOT Redis was drawn from the infrastructure behind the `kouio RSS reader`_, a popular alternative to Google Reader.
+
 
 Installation
 ============
@@ -89,5 +91,6 @@ MultiSet            collections.Counter           hash
 
 .. _`redis-py`: https://github.com/andymccurdy/redis-py
 .. _`Redis`: http://redis.io
+.. _`kouio RSS reader`: https://kouio.com
 .. _`pip`: http://www.pip-installer.org/
 .. _`Bitwise Lua Operations in Redis`: http://blog.jupo.org/2013/06/12/bitwise-lua-operations-in-redis/
