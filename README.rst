@@ -6,7 +6,7 @@ Introduction
 
 HOT Redis is a wrapper library for the `redis-py`_ client. Rather than calling the `Redis`_ commands directly from a client library, HOT Redis provides a wide range of data types that mimic many of the built-in data types provided by Python, such as lists, dicts, sets, and more, as well as many of the classes found throughout the standard library, such as those found in the Queue, threading, and collections modules.
 
-These types are then backed by Redis, allowing objects to be manipulated atomically over the network - the atomic nature of the methods implemented on objects in HOT Redis is one of its core features, and many of these are backed by Lua code executed within Redis, which ensures atomic operations where applicable.
+These types are then backed by Redis, allowing objects to be manipulated atomically over the network - the atomic nature of the methods implemented on objects in HOT Redis is one of its core features, and many of these are backed by `Lua`_ code executed within Redis, which ensures atomic operations where applicable.
 
 The name HOT Redis originally stood for "Higher Order Types for Redis", but since the implementation doesn't strictly fit the definition, the recursive acronym "HOT Object Toolkit for Redis" should appease the most luscious of bearded necks.
 
@@ -91,6 +91,7 @@ MultiSet            collections.Counter           hash
 
 .. _`redis-py`: https://github.com/andymccurdy/redis-py
 .. _`Redis`: http://redis.io
+.. _`Lua`: http://www.lua.org/
 .. _`kouio RSS reader`: https://kouio.com
 .. _`pip`: http://www.pip-installer.org/
 .. _`Bitwise Lua Operations in Redis`: http://blog.jupo.org/2013/06/12/bitwise-lua-operations-in-redis/
