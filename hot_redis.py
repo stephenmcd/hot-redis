@@ -1,6 +1,7 @@
 
 import collections
 import operator
+import os
 import time
 import uuid
 from Queue import Empty as QueueEmpty, Full as QueueFull
@@ -17,19 +18,25 @@ class HotClient(redis.Redis):
         super(HotClient, self).__init__(*args, **kwargs)
         requires_luabit = ("number_and", "number_or", "number_xor",
                            "number_lshift", "number_rshift")
-        with open("bit.lua", "r") as f:
+        with open(self._path("bit.lua")) as f:
             luabit = f.read()
         for name, snippet in self._get_lua_funcs():
             if name in requires_luabit:
                 snippet = luabit + snippet
             self._create_lua_method(name, snippet)
 
+    def _path(self, name):
+        """
+        Joins the given name with the relative path of the module.
+        """
+        return os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
+
     def _get_lua_funcs(self):
         """
         Returns the name / code snippet pair for each Lua function
         in the atoms.lua file.
         """
-        with open("atoms.lua", "r") as f:
+        with open(self._path("atoms.lua")) as f:
             for func in f.read().strip().split("function "):
                 if func:
                     bits = func.split("\n", 1)
