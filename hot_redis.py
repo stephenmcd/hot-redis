@@ -603,13 +603,13 @@ class Float(Numeric):
         return self
 
 
-#####################################################################
-#                                                                   #
-#  Following are the actual Higher Order Types - generally things   #
-#  found in the Python standard library that can be represented by  #
-#  extending / composing the above types. First up: Queue module.   #
-#                                                                   #
-#####################################################################
+###################################################################
+#                                                                 #
+#  Following are the types found in the Python standard library,  #
+#  that can be represented by extending / composing the above     #
+#  types. First up: Queue module.                                 #
+#                                                                 #
+###################################################################
 
 class Queue(List):
     """
