@@ -1,3 +1,5 @@
+.. image:: https://secure.travis-ci.org/stephenmcd/hot-redis.png?branch=master
+   :target: http://travis-ci.org/stephenmcd/hot-redis
 
 Created by `Stephen McDonald <http://twitter.com/stephen_mcd>`_
 
