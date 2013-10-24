@@ -1,10 +1,12 @@
 
 from setuptools import setup, find_packages
 
+from hot_redis import __version__ as version
+
 
 setup(
     name="hot-redis",
-    version="0.1.0",
+    version=version,
     author="Stephen McDonald",
     author_email="steve@jupo.org",
     description="Higher Order Types for Redis",
