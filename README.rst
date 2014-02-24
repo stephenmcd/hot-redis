@@ -41,13 +41,24 @@ Each of the types provided by HOT Redis strive to implement the same method sign
     >>> my_list_with_key.key
     'foo'
 
+Note that, by default, HOT Redis attempts to connect to a Redis instance running locally on the default port 6379. If you wish to use a Redis instance on another host, port, or database number, you will have to explicitly create a HotClient instance and pass the client to each HOT Redis type you instantiate::
+
+    >>> from hot_redis import HotClient, Queue
+    >>> client = HotClient(host='myremotehost', port=6380)
+    >>> my_queue = Queue(client=client)
+    >>> my_queue.key
+    'ff2479f3-d949-4c0c-ad28-0b052e75d7d1'
+    >>> my_queue.put('Hello, world!')
+    >>> my_queue.get()
+    'Hello, world!'
+
 Once you've determined a strategy for naming keys, you can then create HOT Redis objects and interact with them over the network, for example here is a ``List`` created on a computer we'll refer to as computer A::
 
-    >>> list_on_computer_a = List(key="foo", initial=["a", "b", "c"])
+    >>> list_on_computer_a = List(key="foo", initial=["a", "b", "c"], client=client)
 
 then on another computer we'll creatively refer to as computer B::
 
-    >>> list_on_computer_b = List(key="foo")
+    >>> list_on_computer_b = List(key="foo", client=client)
     >>> list_on_computer_b[:]  # Performs: LRANGE foo 0 -1
     ['a', 'b', 'c']
     >>> list_on_computer_b += ['d', 'e', 'f']  # Performs: RPUSH foo d e f
