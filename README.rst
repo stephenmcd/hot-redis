@@ -62,21 +62,6 @@ provided, a key will be generated, which can then be accessed via the
     >>> my_list_with_key.key
     'foo'
 
-Note that, by default, HOT Redis attempts to connect to a Redis
-instance running locally on the default port 6379. If you wish to use a
-Redis instance on another host, port, or database number, you will have
-to explicitly create a HotClient instance and pass the client to each
-HOT Redis type you instantiate::
-
-    >>> from hot_redis import HotClient, Queue
-    >>> client = HotClient(host='myremotehost', port=6380)
-    >>> my_queue = Queue(client=client)
-    >>> my_queue.key
-    'ff2479f3-d949-4c0c-ad28-0b052e75d7d1'
-    >>> my_queue.put('Hello, world!')
-    >>> my_queue.get()
-    'Hello, world!'
-
 Once you've determined a strategy for naming keys, you can then create
 HOT Redis objects and interact with them over the network, for example
 here is a ``List`` created on a computer we'll refer to as computer A::
@@ -111,6 +96,28 @@ would certainly overwrite the other's. In this scenario, and *many*
 others, HOT Redis provides its own Lua routine specifically for
 reversing the list in-place, within Redis atomically. I wrote in more
 detail about this in a blog post, `Bitwise Lua Operations in Redis`_.
+
+
+Configuration
+=============
+
+By default, HOT Redis attempts to connect to a Redis instance running
+locally on the default port 6379. You can configure the default client
+by calling the ``hot_redis.configure`` function, prior to instantiating
+any HOT Redis objects. The arguments given to ``configure`` are passed
+onto the underlying `redis-py`_ client::
+
+    >>> from hot_redis import configure
+    configure(host='myremotehost', port=6380)
+
+Alternatively, if you wish to use a different client per object, you
+can explicitly create a ``HotClient`` instance, and pass it to each
+object::
+
+    >>> from hot_redis import HotClient, Queue
+    >>> client = HotClient(host="myremotehost", port=6380)
+    >>> my_queue = Queue(client=client)
+
 
 Data Types
 ==========
