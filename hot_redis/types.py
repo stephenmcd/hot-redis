@@ -57,6 +57,20 @@ class HotClient(redis.Redis):
         setattr(self, name, method)
 
 
+_client = None
+_config = {}
+
+def default_client():
+    global _client
+    if _client is None:
+        _client = HotClient(**_config)
+    return _client
+
+def configure(config):
+    global _config
+    _config = config
+
+
 ####################################################################
 #                                                                  #
 #  The following functions are all used for creating methods that  #
@@ -127,11 +141,11 @@ class Base(object):
     Redis client.
     """
 
-    def __init__(self, initial=None, key=None, client=HotClient()):
+    def __init__(self, initial=None, key=None, client=None):
+        self.client = client or default_client()  # Must be first.
         self.key = key or str(uuid.uuid4())
         if initial:
             self.value = initial
-        self.client = client
 
     __eq__ = op_left(operator.eq)
     __lt__ = op_left(operator.lt)
@@ -625,10 +639,10 @@ class Queue(List):
 
     maxsize = 0
 
-    def __init__(self, maxsize=None, initial=None, key=None, client=HotClient()):
+    def __init__(self, maxsize=None, **kwargs):
         if maxsize is not None:
             self.maxsize = maxsize
-        super(Queue, self).__init__(initial=initial, key=key, client=client)
+        super(Queue, self).__init__(**kwargs)
 
     @property
     def queue(self):
@@ -737,8 +751,8 @@ class BoundedSemaphore(Queue):
 
     maxsize = 1
 
-    def __init__(self, value=None, initial=None, key=None, client=HotClient()):
-        super(BoundedSemaphore, self).__init__(value, initial, key, client)
+    def __init__(self, value=None, **kwargs):
+        super(BoundedSemaphore, self).__init__(value, **kwargs)
 
     def acquire(self, block=True, timeout=None):
         try:
@@ -783,8 +797,9 @@ class Lock(BoundedSemaphore):
     queue size of 1.
     """
 
-    def __init__(self, initial=None, key=None, client=HotClient()):
-        super(Lock, self).__init__(initial=initial, key=key, client=client)
+    def __init__(self, **kwargs):
+        kwargs["value"] = None
+        super(Lock, self).__init__(**kwargs)
 
 
 class RLock(Lock):
