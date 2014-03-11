@@ -20,8 +20,9 @@ hot_redis.Base.__init__ = base_wrapper(hot_redis.Base.__init__)
 
 class BaseTestCase(unittest.TestCase):
     def tearDown(self):
+        client = hot_redis.default_client()
         while keys:
-            hot_redis.client.delete(keys.pop())
+            client.delete(keys.pop())
 
 
 class ListTests(BaseTestCase):
