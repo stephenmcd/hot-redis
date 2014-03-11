@@ -25,7 +25,7 @@ recursive acronym "HOT Object Toolkit for Redis" should appease the
 most luscious of bearded necks.
 
 HOT Redis was drawn from the infrastructure behind the
-`kouio RSS reader`_, a popular alternative to Google Reader.
+`Kouio RSS reader`_, a popular alternative to Google Reader.
 
 
 Installation
@@ -151,6 +151,6 @@ MultiSet            collections.Counter           hash
 .. _`redis-py`: https://github.com/andymccurdy/redis-py
 .. _`Redis`: http://redis.io
 .. _`Lua`: http://www.lua.org/
-.. _`kouio RSS reader`: https://kouio.com
+.. _`Kouio RSS reader`: https://kouio.com
 .. _`pip`: http://www.pip-installer.org/
 .. _`Bitwise Lua Operations in Redis`: http://blog.jupo.org/2013/06/12/bitwise-lua-operations-in-redis/
