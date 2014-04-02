@@ -1,4 +1,4 @@
-
+from abc import ABCMeta, abstractproperty, abstractmethod
 import collections
 import operator
 import os
@@ -6,6 +6,7 @@ import time
 import uuid
 from Queue import Empty as QueueEmpty, Full as QueueFull
 import redis
+from itertools import chain, repeat
 
 
 class HotClient(redis.Redis):
@@ -167,6 +168,8 @@ class Base(object):
             raise
         return lambda *a, **k: func(self.key, *a, **k)
 
+    def pipeline(self, *args, **kwargs):
+        return self.client.pipeline(*args, **kwargs)
 
 class Bitwise(Base):
     """
@@ -942,3 +945,170 @@ class MultiSet(Dict):
         return values
 
 collections.MutableMapping.register(MultiSet)
+
+class DictBase(collections.MutableMapping, Base):
+
+    __add__  = op_left(operator.add)
+    __sub__  = op_left(operator.sub)
+    __and__  = op_left(operator.and_)
+    __or__   = op_left(operator.or_)
+    __radd__ = op_right(operator.add)
+    __rsub__ = op_right(operator.sub)
+    __rand__ = op_right(operator.and_)
+    __ror__  = op_right(operator.or_)
+
+    @abstractmethod
+    def __iadd__(self, other):
+        pass
+    @abstractmethod
+    def __isub__(self, other):
+        pass
+    @abstractmethod
+    def __iand__(self, other):
+        pass
+    @abstractmethod
+    def __ior__(self, other):
+         pass
+
+    def __init__(self, **kwargs):
+        Base.__init__(self, **kwargs)
+
+    @abstractproperty
+    def value(self):
+        pass
+
+    @value.setter
+    def value(self, value):
+        if not isinstance(value, dict):
+            try:
+                value = dict(value)
+            except TypeError:
+                value = None
+        if value:
+            self.update(value)
+
+    @classmethod
+    def fromkeys(cls, *args):
+        if len(args) == 1:
+            args += ("",)
+        return cls({}.fromkeys(*args))
+
+    def __repr__(self):
+        bits = (self.__class__.__name__, repr(dict(self.value)), self.key)
+        return "%s(%s, '%s')" % bits
+
+
+class MultiSetZSet(DictBase):
+
+    @classmethod
+    def fromkeys(cls, iterable, v=None):
+        raise NotImplementedError(
+            'Method is undefined in context of counter.'
+            'Use cls(iterable) instead.')
+
+    @classmethod
+    def _to_kv_iterable(cls, iterable):
+        if isinstance(iterable, collections.Mapping):
+            for key, count in iterable.iteritems():
+                if not isinstance(key, basestring):
+                    raise ValueError("Key must be instance od basestring")
+                yield (key, int(count))
+        elif isinstance(iterable, basestring):
+            for key, count in collections.Counter(iterable).iteritems():
+                yield (key, count)
+        else:
+            for nested_iterable in iterable:
+                nested_list = list(nested_iterable) #easy way
+                if len(nested_list)!=2:
+                    raise ValueError(
+                        "Nested iterable: %s has length diffrent from 2")
+                if not isinstance(nested_list[0], basestring):
+                    raise ValueError("Key must be instance od basestring")
+                yield (nested_list[0], int(nested_list[1]))
+
+    def __init__(self, iterable=None, key=None, **kwargs):
+        super(MultiSetZSet, self).__init__(key=key)
+        self.update(iterable=iterable, **kwargs)
+
+    def __len__(self):
+        return self.zcard()
+
+    def __getitem__(self, key):
+        if not isinstance(key, basestring):
+            raise ValueError("Key must be instance od basestring")
+        val = self.zscore(key)
+        if val is None:
+            raise KeyError("Key: %s does no exist in collection" % key)
+        return val
+
+    def __iter__(self):
+        keys = self.zrange(0,-1)
+        for key in keys:
+            yield key
+
+    def __setitem__(self, key, value):
+        if not isinstance(key, basestring):
+            raise ValueError("Key must be instance od basestring")
+        self.zadd(key,int(value))
+
+    def __iadd__(self, other):
+        raise NotImplementedError()
+
+    def __isub__(self, other):
+        raise NotImplementedError()
+
+    def __iand__(self, other):
+        raise NotImplementedError()
+
+    def __ior__(self, other):
+         raise NotImplementedError()
+
+    @property
+    def value(self):
+        return collections.Counter(self.elements())
+
+    def __missing__(self, key):
+        return 0
+
+    def most_common(self, n=None):
+        if n == 0:
+            return []
+        if n is None:
+            n=-1
+        return self.zrange(0, int(n), True, True, int)
+
+    def elements(self):
+        return chain.from_iterable(
+            (repeat(key, count) for key,count in  self.most_common()))
+
+    def update(self, iterable=None, **kwds):
+        iterables = []
+        if iterable is not None:
+            iterables.append(self._to_kv_iterable(iterable))
+        if kwds:
+            iterables.append(self._to_kv_iterable(kwds))
+        if iterables:
+            pipe = self.pipeline(False)
+            for key, value in chain.from_iterable(iterables):
+                pipe.zincrby(self.key, key, value)
+            pipe.execute()
+
+    def subtract(self, iterable=None, **kwds):
+        iterables = []
+        if iterable is not None:
+            iterables.append(self._to_kv_iterable(iterable))
+        if kwds:
+            iterables.append(self._to_kv_iterable(kwds))
+        if iterables:
+            pipe = self.pipeline(False)
+            for key, value in chain.from_iterable(iterables):
+                pipe.zincrby(self.key, key, -value)
+            pipe.execute()
+
+    def copy(self):
+        return self.__class__(self.values)
+
+    def __delitem__(self, key):
+        self.zrem(key)
+
+collections.MutableMapping.register(MultiSetZSet)

@@ -6,7 +6,6 @@ import Queue
 import unittest
 import hot_redis
 
-
 keys = []
 
 def base_wrapper(init):
@@ -858,28 +857,29 @@ class QueueTests(BaseTestCase):
         self.assertEquals(q.qsize(), 0)
 
 
-class CounterTests(BaseTestCase):
+class CounterTestMixin(object):
+    _test_cls = None
 
     def test_value(self):
         a = "wagwaan"
         b = {"hot": 420, "skull": -9000}
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
+        d = self._test_cls(a)
         e = collections.Counter(**b)
-        f = hot_redis.MultiSet(**b)
+        f = self._test_cls(**b)
         self.assertEquals(d, c)
         self.assertEquals(f, e)
 
     def test_empty(self):
-        self.assertEquals(hot_redis.MultiSet(), collections.Counter())
+        self.assertEquals(self._test_cls(), collections.Counter())
 
     def test_values(self):
         a = "wagwaan"
         b = {"hot": 420, "skull": -9000}
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
+        d = self._test_cls(a)
         e = collections.Counter(**b)
-        f = hot_redis.MultiSet(**b)
+        f = self._test_cls(**b)
         self.assertItemsEqual(c.values(), d.values())
         self.assertItemsEqual(e.values(), f.values())
 
@@ -887,9 +887,9 @@ class CounterTests(BaseTestCase):
         a = "wagwaan"
         b = {"hot": 420, "skull": -9000}
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
+        d = self._test_cls(a)
         e = collections.Counter(**b)
-        f = hot_redis.MultiSet(**b)
+        f = self._test_cls(**b)
         self.assertEquals(c.get("a"), d.get("a"))
         self.assertEquals(c.get("flute", "don"), d.get("flute", "don"))
         self.assertEquals(e.get("hot"), f.get("hot"))
@@ -897,34 +897,34 @@ class CounterTests(BaseTestCase):
         self.assertEquals(e.get("flute", "don"), e.get("flute", "don"))
 
     def test_del(self):
-        a = hot_redis.MultiSet("wagwaan")
+        a = self._test_cls("wagwaan")
         del a["hotskull"]
 
     def test_update(self):
         a = "wagwaan"
         b = {"hotskull": 420}
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
-        c.update(hot_redis.MultiSet(a))
-        d.update(hot_redis.MultiSet(a))
+        d = self._test_cls(a)
+        c.update(self._test_cls(a))
+        d.update(self._test_cls(a))
         self.assertEqual(d, c)
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
+        d = self._test_cls(a)
         c.update(collections.Counter(a))
         d.update(collections.Counter(a))
         self.assertEqual(d, c)
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
+        d = self._test_cls(a)
         c.update(a)
         d.update(a)
         self.assertEqual(d, c)
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
+        d = self._test_cls(a)
         c.update(b)
         d.update(b)
         self.assertEqual(d, c)
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
+        d = self._test_cls(a)
         c.update(**b)
         d.update(**b)
         self.assertEqual(d, c)
@@ -933,27 +933,27 @@ class CounterTests(BaseTestCase):
         a = "wagwaan"
         b = {"hotskull": 420}
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
-        c.subtract(hot_redis.MultiSet(a))
-        d.subtract(hot_redis.MultiSet(a))
+        d = self._test_cls(a)
+        c.subtract(self._test_cls(a))
+        d.subtract(self._test_cls(a))
         self.assertEqual(d, c)
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
+        d = self._test_cls(a)
         c.subtract(collections.Counter(a))
         d.subtract(collections.Counter(a))
         self.assertEqual(d, c)
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
+        d = self._test_cls(a)
         c.subtract(a)
         d.subtract(a)
         self.assertEqual(d, c)
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
+        d = self._test_cls(a)
         c.subtract(b)
         d.subtract(b)
         self.assertEqual(d, c)
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
+        d = self._test_cls(a)
         c.subtract(**b)
         d.subtract(**b)
         self.assertEqual(d, c)
@@ -962,12 +962,12 @@ class CounterTests(BaseTestCase):
         a = "wagwaan"
         b = "flute don"
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
-        c &= hot_redis.MultiSet(b)
-        d &= hot_redis.MultiSet(b)
+        d = self._test_cls(a)
+        c &= self._test_cls(b)
+        d &= self._test_cls(b)
         self.assertEqual(d, c)
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
+        d = self._test_cls(a)
         c &= collections.Counter(b)
         d &= collections.Counter(b)
         self.assertEqual(d, c)
@@ -976,12 +976,12 @@ class CounterTests(BaseTestCase):
         a = "wagwaan"
         b = "flute don"
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
-        c |= hot_redis.MultiSet(b)
-        d |= hot_redis.MultiSet(b)
+        d = self._test_cls(a)
+        c |= self._test_cls(b)
+        d |= self._test_cls(b)
         self.assertEqual(d, c)
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
+        d = self._test_cls(a)
         c |= collections.Counter(b)
         d |= collections.Counter(b)
         self.assertEqual(d, c)
@@ -990,19 +990,26 @@ class CounterTests(BaseTestCase):
         a = "wagwaan"
         b = {"hotskull": 420}
         c = collections.Counter(a)
-        d = hot_redis.MultiSet(a)
+        d = self._test_cls(a)
         e = collections.Counter(**b)
-        f = hot_redis.MultiSet(**b)
+        f = self._test_cls(**b)
         self.assertItemsEqual(c.elements(), d.elements())
         self.assertItemsEqual(e.elements(), f.elements())
 
     def test_most_common(self):
-        a = "wagwaan"
+        a = "wanwaa"
         b = collections.Counter(a)
-        c = hot_redis.MultiSet(a)
+        c = self._test_cls(a)
         d = 420
         self.assertEqual(c.most_common(d), b.most_common(d))
         self.assertEqual(c.most_common(), b.most_common())
+
+
+class HashCounterTests(BaseTestCase, CounterTestMixin):
+    _test_cls = hot_redis.MultiSet
+
+class ZSetCounterTests(BaseTestCase, CounterTestMixin):
+    _test_cls = hot_redis.MultiSetZSet
 
 
 if __name__ == "__main__":
