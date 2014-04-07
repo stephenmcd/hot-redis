@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractproperty, abstractmethod
 import collections
+import contextlib
 import operator
 import os
 import time
@@ -70,6 +71,15 @@ def default_client():
 def configure(config):
     global _config
     _config = config
+
+@contextlib.contextmanager
+def transaction():
+    global _client
+    client = _client
+    _client = client.pipeline()
+    yield
+    _client.execute()
+    _client = client
 
 
 ####################################################################
@@ -143,7 +153,7 @@ class Base(object):
     """
 
     def __init__(self, initial=None, key=None, client=None):
-        self.client = client or default_client()  # Must be first.
+        self.client = client  # Must be first.
         self.key = key or str(uuid.uuid4())
         if initial:
             self.value = initial
@@ -163,7 +173,7 @@ class Base(object):
 
     def _dispatch(self, name):
         try:
-            func = getattr(self.client, name)
+            func = getattr(self.client or default_client(), name)
         except AttributeError:
             raise
         return lambda *a, **k: func(self.key, *a, **k)
