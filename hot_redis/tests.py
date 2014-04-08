@@ -1005,5 +1005,17 @@ class CounterTests(BaseTestCase):
         self.assertEqual(c.most_common(), b.most_common())
 
 
+class TransactionTests(BaseTestCase):
+
+    def test_transaction(self):
+        with_transaction = hot_redis.List([1])
+        without_transaction = hot_redis.List(key=with_transaction.key,
+                                             client=hot_redis.HotClient())
+        with hot_redis.transaction():
+            with_transaction.append(1)
+            self.assertEquals(len(without_transaction), 1)
+        self.assertEquals(len(without_transaction), 2)
+
+
 if __name__ == "__main__":
     unittest.main()
