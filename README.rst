@@ -146,7 +146,29 @@ Lock                threading.Lock                list        Extension of ``Bou
 RLock               threading.RLock               list        Extension of ``Lock`` allowing multiple ``acquire`` calls
 DefaultDict         collections.DefaultDict       hash
 MultiSet            collections.Counter           hash
+MultiSetZSet        collections.Counter           sorted set  fast "most_common" lookup
 ==================  ============================  ==========  ===============
+
+Transactions and batching
+=========================
+
+To take advantage of  builtin Redis pipe features you can use convenient
+context managers e.g:
+
+    >>> from hot_redis.types import transaction, batching
+    >>> from redis.exceptions import WatchError
+    >>> try:
+    >>>     with transaction(): #
+    >>>         my_list = List()
+    >>>         my_list.key
+    >>> except WatchError:
+    >>>     # handle rollback here
+    ...
+    >>> with batch():
+    >>>     my_list = List()
+    >>>     my_list.key
+
+
 
 .. _`redis-py`: https://github.com/andymccurdy/redis-py
 .. _`Redis`: http://redis.io

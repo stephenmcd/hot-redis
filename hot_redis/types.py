@@ -72,8 +72,7 @@ def configure(config):
     global _config
     _config = config
 
-@contextlib.contextmanager
-def transaction():
+def _in_pipe(transaction=True):
     global _client
     client = _client
     _client = client.pipeline()
@@ -81,6 +80,13 @@ def transaction():
     _client.execute()
     _client = client
 
+@contextlib.contextmanager
+def transaction():
+    return _in_pipe()
+
+@contextlib.contextmanager
+def batch():
+    return _in_pipe(False)
 
 ####################################################################
 #                                                                  #
@@ -177,9 +183,6 @@ class Base(object):
         except AttributeError:
             raise
         return lambda *a, **k: func(self.key, *a, **k)
-
-    def pipeline(self, *args, **kwargs):
-        return self.client.pipeline(*args, **kwargs)
 
 class Bitwise(Base):
     """
@@ -956,29 +959,33 @@ class MultiSet(Dict):
 
 collections.MutableMapping.register(MultiSet)
 
+
 class DictBase(collections.MutableMapping, Base):
 
-    __add__  = op_left(operator.add)
-    __sub__  = op_left(operator.sub)
-    __and__  = op_left(operator.and_)
-    __or__   = op_left(operator.or_)
+    __add__ = op_left(operator.add)
+    __sub__ = op_left(operator.sub)
+    __and__ = op_left(operator.and_)
+    __or__ = op_left(operator.or_)
     __radd__ = op_right(operator.add)
     __rsub__ = op_right(operator.sub)
     __rand__ = op_right(operator.and_)
-    __ror__  = op_right(operator.or_)
+    __ror__ = op_right(operator.or_)
 
     @abstractmethod
     def __iadd__(self, other):
         pass
+
     @abstractmethod
     def __isub__(self, other):
         pass
+
     @abstractmethod
     def __iand__(self, other):
         pass
+
     @abstractmethod
     def __ior__(self, other):
-         pass
+        pass
 
     def __init__(self, **kwargs):
         Base.__init__(self, **kwargs)
@@ -1028,8 +1035,8 @@ class MultiSetZSet(DictBase):
                 yield (key, count)
         else:
             for nested_iterable in iterable:
-                nested_list = list(nested_iterable) #easy way
-                if len(nested_list)!=2:
+                nested_list = list(nested_iterable)  # easy way
+                if len(nested_list) != 2:
                     raise ValueError(
                         "Nested iterable: %s has length diffrent from 2")
                 if not isinstance(nested_list[0], basestring):
@@ -1052,26 +1059,30 @@ class MultiSetZSet(DictBase):
         return val
 
     def __iter__(self):
-        keys = self.zrange(0,-1)
+        keys = self.zrange(0, -1)
         for key in keys:
             yield key
 
     def __setitem__(self, key, value):
         if not isinstance(key, basestring):
             raise ValueError("Key must be instance od basestring")
-        self.zadd(key,int(value))
+        self.zadd(key, int(value))
 
     def __iadd__(self, other):
-        raise NotImplementedError()
+        #TODO lua this
+        return self.__add__(other)
 
     def __isub__(self, other):
-        raise NotImplementedError()
+        #TODO lua this
+        return self.__sub__(other)
 
     def __iand__(self, other):
-        raise NotImplementedError()
+        #TODO lua this
+        return self.__and__(other)
 
     def __ior__(self, other):
-         raise NotImplementedError()
+        #TODO lua this
+        return self.__or__(other)
 
     @property
     def value(self):
@@ -1084,12 +1095,12 @@ class MultiSetZSet(DictBase):
         if n == 0:
             return []
         if n is None:
-            n=-1
+            n = -1
         return self.zrange(0, int(n), True, True, int)
 
     def elements(self):
         return chain.from_iterable(
-            (repeat(key, count) for key,count in  self.most_common()))
+            (repeat(key, count) for key, count in self.most_common()))
 
     def update(self, iterable=None, **kwds):
         iterables = []
@@ -1098,10 +1109,10 @@ class MultiSetZSet(DictBase):
         if kwds:
             iterables.append(self._to_kv_iterable(kwds))
         if iterables:
-            pipe = self.pipeline(False)
-            for key, value in chain.from_iterable(iterables):
-                pipe.zincrby(self.key, key, value)
-            pipe.execute()
+            kvs = list(chain.from_iterable(iterables))
+            with batch():
+                for key, value in kvs:
+                    self.zincrby(key, value)
 
     def subtract(self, iterable=None, **kwds):
         iterables = []
@@ -1110,10 +1121,10 @@ class MultiSetZSet(DictBase):
         if kwds:
             iterables.append(self._to_kv_iterable(kwds))
         if iterables:
-            pipe = self.pipeline(False)
-            for key, value in chain.from_iterable(iterables):
-                pipe.zincrby(self.key, key, -value)
-            pipe.execute()
+            kvs = list(chain.from_iterable(iterables))
+            with batch():
+                for key, value in kvs:
+                    self.zincrby(key, -value)
 
     def copy(self):
         return self.__class__(self.values)
