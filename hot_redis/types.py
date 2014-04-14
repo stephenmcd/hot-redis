@@ -74,6 +74,8 @@ def configure(config):
 
 def _in_pipe(transaction=True):
     global _client
+    if not _client:
+         default_client()
     client = _client
     _client = client.pipeline()
     yield
@@ -867,155 +869,10 @@ class DefaultDict(Dict):
         return self.setdefault(key, self.default_factory())
 
 
-class MultiSet(Dict):
+class MultiSet(collections.MutableMapping, Base):
     """
-    Redis hash <-> Python dict <-> Python's collections.Counter.
+    Redis sorted set <-> Python's collections.Counter.
     """
-
-    def __init__(self, iterable=None, key=None, **kwargs):
-        super(MultiSet, self).__init__(key=key)
-        self.update(iterable=iterable, **kwargs)
-
-    @property
-    def value(self):
-        value = super(MultiSet, self).value
-        kwargs = dict([(k, int(v)) for k, v in value.items()])
-        return collections.Counter(**kwargs)
-
-    __add__  = op_left(operator.add)
-    __sub__  = op_left(operator.sub)
-    __and__  = op_left(operator.and_)
-    __or__   = op_left(operator.or_)
-    __radd__ = op_right(operator.add)
-    __rsub__ = op_right(operator.sub)
-    __rand__ = op_right(operator.and_)
-    __ror__  = op_right(operator.or_)
-    __iadd__ = inplace("update")
-    __isub__ = inplace("subtract")
-    __iand__ = inplace("intersection_update")
-    __ior__  = inplace("union_update")
-
-    def __delitem__(self, name):
-        try:
-            super(MultiSet, self).__delitem__(name)
-        except KeyError:
-            pass
-
-    def __repr__(self):
-        bits = (self.__class__.__name__, repr(dict(self.value)), self.key)
-        return "%s(%s, '%s')" % bits
-
-    def values(self):
-        values = super(MultiSet, self).values()
-        return [int(v) for v in values]
-
-    def get(self, key, default=None):
-        value = self.hget(key)
-        return int(value) if value is not None else default
-
-    def _merge(self, iterable=None, **kwargs):
-        if iterable:
-            try:
-                items = iterable.iteritems()
-            except AttributeError:
-                for k in iterable:
-                    kwargs[k] = kwargs.get(k, 0) + 1
-            else:
-                for k, v in items:
-                    kwargs[k] = kwargs.get(k, 0) + v
-        return kwargs.items()
-
-    def _flatten(self, iterable, **kwargs):
-        for k, v in self._merge(iterable, **kwargs):
-            yield k
-            yield v
-
-    def _update(self, iterable, multiplier, **kwargs):
-        for k, v in self._merge(iterable, **kwargs):
-            self.hincrby(k, v * multiplier)
-
-    def update(self, iterable=None, **kwargs):
-        self._update(iterable, 1, **kwargs)
-
-    def subtract(self, iterable=None, **kwargs):
-        self._update(iterable, -1, **kwargs)
-
-    def intersection_update(self, iterable=None, **kwargs):
-        self.multiset_intersection_update(*self._flatten(iterable, **kwargs))
-
-    def union_update(self, iterable=None, **kwargs):
-        self.multiset_union_update(*self._flatten(iterable, **kwargs))
-
-    def elements(self):
-        for k, count in self.iteritems():
-            for i in range(count):
-                yield k
-
-    def most_common(self, n=None):
-        values = sorted(self.iteritems(), key=lambda v: v[1], reverse=True)
-        if n:
-            values = values[:n]
-        return values
-
-collections.MutableMapping.register(MultiSet)
-
-
-class DictBase(collections.MutableMapping, Base):
-
-    __add__ = op_left(operator.add)
-    __sub__ = op_left(operator.sub)
-    __and__ = op_left(operator.and_)
-    __or__ = op_left(operator.or_)
-    __radd__ = op_right(operator.add)
-    __rsub__ = op_right(operator.sub)
-    __rand__ = op_right(operator.and_)
-    __ror__ = op_right(operator.or_)
-
-    @abstractmethod
-    def __iadd__(self, other):
-        pass
-
-    @abstractmethod
-    def __isub__(self, other):
-        pass
-
-    @abstractmethod
-    def __iand__(self, other):
-        pass
-
-    @abstractmethod
-    def __ior__(self, other):
-        pass
-
-    def __init__(self, **kwargs):
-        Base.__init__(self, **kwargs)
-
-    @abstractproperty
-    def value(self):
-        pass
-
-    @value.setter
-    def value(self, value):
-        if not isinstance(value, dict):
-            try:
-                value = dict(value)
-            except TypeError:
-                value = None
-        if value:
-            self.update(value)
-
-    @classmethod
-    def fromkeys(cls, *args):
-        if len(args) == 1:
-            args += ("",)
-        return cls({}.fromkeys(*args))
-
-    def __repr__(self):
-        bits = (self.__class__.__name__, repr(dict(self.value)), self.key)
-        return "%s(%s, '%s')" % bits
-
-
-class MultiSetZSet(DictBase):
 
     @classmethod
     def fromkeys(cls, iterable, v=None):
@@ -1044,7 +901,7 @@ class MultiSetZSet(DictBase):
                 yield (nested_list[0], int(nested_list[1]))
 
     def __init__(self, iterable=None, key=None, **kwargs):
-        super(MultiSetZSet, self).__init__(key=key)
+        super(MultiSet, self).__init__(key=key)
         self.update(iterable=iterable, **kwargs)
 
     def __len__(self):
@@ -1068,25 +925,40 @@ class MultiSetZSet(DictBase):
             raise ValueError("Key must be instance od basestring")
         self.zadd(key, int(value))
 
-    def __iadd__(self, other):
-        #TODO lua this
-        return self.__add__(other)
+    __add__ = op_left(operator.add)
+    __sub__ = op_left(operator.sub)
+    __and__ = op_left(operator.and_)
+    __or__ = op_left(operator.or_)
+    __radd__ = op_right(operator.add)
+    __rsub__ = op_right(operator.sub)
+    __rand__ = op_right(operator.and_)
+    __ror__ = op_right(operator.or_)
+    __iadd__ = inplace("update")
+    __isub__ = inplace("subtract")
+    __iand__ = inplace("intersection_update")
+    __ior__  = inplace("union_update")
 
-    def __isub__(self, other):
-        #TODO lua this
-        return self.__sub__(other)
-
-    def __iand__(self, other):
-        #TODO lua this
-        return self.__and__(other)
-
-    def __ior__(self, other):
-        #TODO lua this
-        return self.__or__(other)
 
     @property
     def value(self):
-        return collections.Counter(self.elements())
+        return collections.Counter(self.most_common())
+
+    @value.setter
+    def value(self, value):
+        if not isinstance(value, dict):
+            try:
+                value = dict(value)
+            except TypeError:
+                value = None
+        if value:
+            self.update(value)
+
+
+
+    def __repr__(self):
+        bits = (self.__class__.__name__, repr(dict(self.value)), self.key)
+        return "%s(%s, '%s')" % bits
+
 
     def __missing__(self, key):
         return 0
@@ -1132,4 +1004,4 @@ class MultiSetZSet(DictBase):
     def __delitem__(self, key):
         self.zrem(key)
 
-collections.MutableMapping.register(MultiSetZSet)
+collections.MutableMapping.register(MultiSet)
