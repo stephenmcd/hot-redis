@@ -1,13 +1,12 @@
-from abc import ABCMeta, abstractproperty, abstractmethod
 import collections
-import contextlib
 import operator
 import os
 import time
 import uuid
 from Queue import Empty as QueueEmpty, Full as QueueFull
-import redis
 from itertools import chain, repeat
+
+import redis
 from redis.client import Redis
 
 
@@ -63,7 +62,7 @@ class HotClient(object):
         setattr(self, name, method)
 
     def __getattr__(self, name):
-        if name  in self.__dict__:
+        if name in self.__dict__:
             return super(HotClient, self).__getattribute__(name)
         return self._client.__getattribute__(name)
 
@@ -71,16 +70,17 @@ class HotClient(object):
 _client = None
 _config = {}
 
+
 def default_client():
     global _client
     if _client is None:
         _client = HotClient(**_config)
     return _client
 
+
 def configure(config):
     global _config
     _config = config
-
 
 
 ####################################################################
@@ -114,8 +114,10 @@ def op_left(op):
     Returns a type instance method for the given operator, applied
     when the instance appears on the left side of the expression.
     """
+
     def method(self, other):
         return op(self.value, value_left(self, other))
+
     return method
 
 
@@ -124,8 +126,10 @@ def op_right(op):
     Returns a type instance method for the given operator, applied
     when the instance appears on the right side of the expression.
     """
+
     def method(self, other):
         return op(value_left(self, other), value_right(self, other))
+
     return method
 
 
@@ -134,9 +138,11 @@ def inplace(method_name):
     Returns a type instance method that will call the given method
     name, used for inplace operators such as __iadd__ and __imul__.
     """
+
     def method(self, other):
         getattr(self, method_name)(value_left(self, other))
         return self
+
     return method
 
 
@@ -189,57 +195,57 @@ class Bitwise(Base):
     """
     Base class for bitwise types and relevant operators.
     """
-    __and__       = op_left(operator.and_)
-    __or__        = op_left(operator.or_)
-    __xor__       = op_left(operator.xor)
-    __lshift__    = op_left(operator.lshift)
-    __rshift__    = op_left(operator.rshift)
-    __rand__      = op_right(operator.and_)
-    __ror__       = op_right(operator.or_)
-    __rxor__      = op_right(operator.xor)
-    __rlshift__   = op_right(operator.lshift)
-    __rrshift__   = op_right(operator.rshift)
+    __and__ = op_left(operator.and_)
+    __or__ = op_left(operator.or_)
+    __xor__ = op_left(operator.xor)
+    __lshift__ = op_left(operator.lshift)
+    __rshift__ = op_left(operator.rshift)
+    __rand__ = op_right(operator.and_)
+    __ror__ = op_right(operator.or_)
+    __rxor__ = op_right(operator.xor)
+    __rlshift__ = op_right(operator.lshift)
+    __rrshift__ = op_right(operator.rshift)
 
 
 class Sequential(Base):
     """
     Base class for sequence types and relevant operators.
     """
-    __add__       = op_left(operator.add)
-    __mul__       = op_left(operator.mul)
-    __radd__      = op_right(operator.add)
-    __rmul__      = op_right(operator.mul)
+    __add__ = op_left(operator.add)
+    __mul__ = op_left(operator.mul)
+    __radd__ = op_right(operator.add)
+    __rmul__ = op_right(operator.mul)
 
 
 class Numeric(Base):
     """
     Base class for numeric types and relevant operators.
     """
-    __add__       = op_left(operator.add)
-    __sub__       = op_left(operator.sub)
-    __mul__       = op_left(operator.mul)
-    __div__       = op_left(operator.div)
-    __floordiv__  = op_left(operator.floordiv)
-    __truediv__   = op_left(operator.truediv)
-    __mod__       = op_left(operator.mod)
-    __divmod__    = op_left(divmod)
-    __pow__       = op_left(operator.pow)
-    __radd__      = op_right(operator.add)
-    __rsub__      = op_right(operator.sub)
-    __rmul__      = op_right(operator.mul)
-    __rdiv__      = op_right(operator.div)
-    __rtruediv__  = op_right(operator.truediv)
+    __add__ = op_left(operator.add)
+    __sub__ = op_left(operator.sub)
+    __mul__ = op_left(operator.mul)
+    __div__ = op_left(operator.div)
+    __floordiv__ = op_left(operator.floordiv)
+    __truediv__ = op_left(operator.truediv)
+    __mod__ = op_left(operator.mod)
+    __divmod__ = op_left(divmod)
+    __pow__ = op_left(operator.pow)
+    __radd__ = op_right(operator.add)
+    __rsub__ = op_right(operator.sub)
+    __rmul__ = op_right(operator.mul)
+    __rdiv__ = op_right(operator.div)
+    __rtruediv__ = op_right(operator.truediv)
     __rfloordiv__ = op_right(operator.floordiv)
-    __rmod__      = op_right(operator.mod)
-    __rdivmod__   = op_right(divmod)
-    __rpow__      = op_right(operator.pow)
-    __iadd__      = inplace("incr")
-    __isub__      = inplace("decr")
-    __imul__      = inplace("number_multiply")
-    __idiv__      = inplace("number_divide")
+    __rmod__ = op_right(operator.mod)
+    __rdivmod__ = op_right(divmod)
+    __rpow__ = op_right(operator.pow)
+    __iadd__ = inplace("incr")
+    __isub__ = inplace("decr")
+    __imul__ = inplace("number_multiply")
+    __idiv__ = inplace("number_divide")
     __ifloordiv__ = inplace("number_floordiv")
-    __imod__      = inplace("number_mod")
-    __ipow__      = inplace("number_pow")
+    __imod__ = inplace("number_mod")
+    __ipow__ = inplace("number_pow")
 
 
 ####################################################
@@ -339,7 +345,7 @@ class Set(Bitwise):
         return [s.key for s in sets]
 
     __iand__ = inplace("intersection_update")
-    __ior__  = inplace("update")
+    __ior__ = inplace("update")
     __ixor__ = inplace("symmetric_difference_update")
     __isub__ = inplace("difference_update")
     __rsub__ = op_right(operator.sub)
@@ -613,9 +619,9 @@ class Int(Numeric, Bitwise):
         if value:
             self.set(value)
 
-    __iand__    = inplace("number_and")
-    __ior__     = inplace("number_or")
-    __ixor__    = inplace("number_xor")
+    __iand__ = inplace("number_and")
+    __ior__ = inplace("number_or")
+    __ixor__ = inplace("number_xor")
     __ilshift__ = inplace("number_lshift")
     __irshift__ = inplace("number_rshift")
 
@@ -703,11 +709,11 @@ class Queue(List):
         return item
 
     def get_nowait(self):
-        return self.get(item, block=False)
+        return self.get(block=False)
 
     def join(self):
         while not self.empty():
-            sleep(.1)
+            time.sleep(.1)
 
 
 class LifoQueue(Queue):
@@ -924,6 +930,9 @@ class MultiSet(collections.MutableMapping, Base):
             raise ValueError("Key must be instance od basestring")
         self.zadd(key, int(value))
 
+    def __delitem__(self, key):
+        self.zrem(key)
+
     __add__ = op_left(operator.add)
     __sub__ = op_left(operator.sub)
     __and__ = op_left(operator.and_)
@@ -935,13 +944,7 @@ class MultiSet(collections.MutableMapping, Base):
     __iadd__ = inplace("update")
     __isub__ = inplace("subtract")
     __iand__ = inplace("intersection_update")
-    __ior__  = inplace("union_update")
-
-    def __delitem__(self, name):
-        try:
-            super(MultiSet, self).__delitem__(name)
-        except KeyError:
-            pass
+    __ior__ = inplace("union_update")
 
     @property
     def value(self):
@@ -957,21 +960,9 @@ class MultiSet(collections.MutableMapping, Base):
         if value:
             self.update(value)
 
-    def _flatten(self, iterable, **kwargs):
-        for k, v in self._merge(iterable, **kwargs):
-            yield k
-            yield v
-
-    def _update(self, iterable, multiplier, **kwargs):
-        for k, v in self._merge(iterable, **kwargs):
-            self.hincrby(k, v * multiplier)
-
     def __repr__(self):
         bits = (self.__class__.__name__, repr(dict(self.value)), self.key)
         return "%s(%s, '%s')" % bits
-
-    def subtract(self, iterable=None, **kwargs):
-        self._update(iterable, -1, **kwargs)
 
     def __missing__(self, key):
         return 0
@@ -995,9 +986,9 @@ class MultiSet(collections.MutableMapping, Base):
             iterables.append(self._to_kv_iterable(kwds))
         if iterables:
             kvs = list(chain.from_iterable(iterables))
-            with batch():
+            with self.pipeline(transaction=False) as pipe:
                 for key, value in kvs:
-                    self.zincrby(key, value)
+                    pipe.zincrby(key, value)
 
     def subtract(self, iterable=None, **kwds):
         iterables = []
@@ -1007,14 +998,12 @@ class MultiSet(collections.MutableMapping, Base):
             iterables.append(self._to_kv_iterable(kwds))
         if iterables:
             kvs = list(chain.from_iterable(iterables))
-            with batch():
+            with self.pipeline(transaction=False) as pipe:
                 for key, value in kvs:
-                    self.zincrby(key, -value)
+                    pipe.zincrby(key, -value)
 
     def copy(self):
         return self.__class__(self.values)
 
-    def __delitem__(self, key):
-        self.zrem(key)
 
 collections.MutableMapping.register(MultiSet)
