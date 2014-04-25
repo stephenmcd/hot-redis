@@ -8,16 +8,20 @@ import uuid
 from Queue import Empty as QueueEmpty, Full as QueueFull
 import redis
 from itertools import chain, repeat
+from redis.client import Redis
 
 
-class HotClient(redis.Redis):
+class HotClient(object):
     """
     A Redis client wrapper that loads Lua functions and creates
     client methods for calling them.
     """
 
-    def __init__(self, *args, **kwargs):
-        super(HotClient, self).__init__(*args, **kwargs)
+    def __init__(self, client=None, *args, **kwargs):
+        self._client = client
+        if not self._client:
+            self._client = Redis(*args, **kwargs)
+
         requires_luabit = ("number_and", "number_or", "number_xor",
                            "number_lshift", "number_rshift")
         with open(self._get_lua_path("bit.lua")) as f:
@@ -54,9 +58,14 @@ class HotClient(redis.Redis):
         the same signature as regular client methodds, eg with a
         single key arg.
         """
-        script = self.register_script(code)
+        script = self._client.register_script(code)
         method = lambda key, *a, **k: script(keys=[key], args=a, **k)
         setattr(self, name, method)
+
+    def __getattr__(self, name):
+        if name  in self.__dict__:
+            return super(HotClient, self).__getattribute__(name)
+        return self._client.__getattribute__(name)
 
 
 _client = None
@@ -72,23 +81,7 @@ def configure(config):
     global _config
     _config = config
 
-def _in_pipe(transaction=True):
-    global _client
-    if not _client:
-         default_client()
-    client = _client
-    _client = client.pipeline()
-    yield
-    _client.execute()
-    _client = client
 
-@contextlib.contextmanager
-def transaction():
-    return _in_pipe()
-
-@contextlib.contextmanager
-def batch():
-    return _in_pipe(False)
 
 ####################################################################
 #                                                                  #
@@ -161,7 +154,12 @@ class Base(object):
     """
 
     def __init__(self, initial=None, key=None, client=None):
-        self.client = client  # Must be first.
+        if not isinstance(client, HotClient):
+            client = HotClient(client) or default_client()
+        else:
+            client = client or default_client()
+        self.client = client
+
         self.key = key or str(uuid.uuid4())
         if initial:
             self.value = initial
@@ -181,10 +179,11 @@ class Base(object):
 
     def _dispatch(self, name):
         try:
-            func = getattr(self.client or default_client(), name)
+            func = getattr(self.client, name)
         except AttributeError:
             raise
         return lambda *a, **k: func(self.key, *a, **k)
+
 
 class Bitwise(Base):
     """
@@ -938,6 +937,11 @@ class MultiSet(collections.MutableMapping, Base):
     __iand__ = inplace("intersection_update")
     __ior__  = inplace("union_update")
 
+    def __delitem__(self, name):
+        try:
+            super(MultiSet, self).__delitem__(name)
+        except KeyError:
+            pass
 
     @property
     def value(self):
@@ -953,12 +957,21 @@ class MultiSet(collections.MutableMapping, Base):
         if value:
             self.update(value)
 
+    def _flatten(self, iterable, **kwargs):
+        for k, v in self._merge(iterable, **kwargs):
+            yield k
+            yield v
 
+    def _update(self, iterable, multiplier, **kwargs):
+        for k, v in self._merge(iterable, **kwargs):
+            self.hincrby(k, v * multiplier)
 
     def __repr__(self):
         bits = (self.__class__.__name__, repr(dict(self.value)), self.key)
         return "%s(%s, '%s')" % bits
 
+    def subtract(self, iterable=None, **kwargs):
+        self._update(iterable, -1, **kwargs)
 
     def __missing__(self, key):
         return 0
