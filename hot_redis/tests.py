@@ -6,7 +6,6 @@ import Queue
 import unittest
 import hot_redis
 
-
 keys = []
 
 def base_wrapper(init):
@@ -858,7 +857,7 @@ class QueueTests(BaseTestCase):
         self.assertEquals(q.qsize(), 0)
 
 
-class CounterTests(BaseTestCase):
+class CounterTest(object):
 
     def test_value(self):
         a = "wagwaan"
@@ -997,24 +996,12 @@ class CounterTests(BaseTestCase):
         self.assertItemsEqual(e.elements(), f.elements())
 
     def test_most_common(self):
-        a = "wagwaan"
+        a = "wanwaa"
         b = collections.Counter(a)
         c = hot_redis.MultiSet(a)
         d = 420
         self.assertEqual(c.most_common(d), b.most_common(d))
         self.assertEqual(c.most_common(), b.most_common())
-
-
-class TransactionTests(BaseTestCase):
-
-    def test_transaction(self):
-        with_transaction = hot_redis.List([1])
-        without_transaction = hot_redis.List(key=with_transaction.key,
-                                             client=hot_redis.HotClient())
-        with hot_redis.transaction():
-            with_transaction.append(1)
-            self.assertEquals(len(without_transaction), 1)
-        self.assertEquals(len(without_transaction), 2)
 
 
 if __name__ == "__main__":
