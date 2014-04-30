@@ -905,7 +905,9 @@ class MultiSet(collections.MutableMapping, Base):
                     raise ValueError("Key must be instance od basestring")
                 yield (nested_list[0], int(nested_list[1]))
 
-    def __init__(self, initial=None, client=None, iterable=None, key=None, **kwargs):
+    def __init__(
+            self, initial=None, client=None,
+            iterable=None, key=None, **kwargs):
         super(MultiSet, self).__init__(initial=initial, client=client, key=key)
         self.update(iterable=iterable, **kwargs)
 
@@ -918,6 +920,7 @@ class MultiSet(collections.MutableMapping, Base):
         val = self.zscore(key)
         if val is None:
             return 0
+        return val
 
     def __iter__(self):
         keys = self.zrange(0, -1)
