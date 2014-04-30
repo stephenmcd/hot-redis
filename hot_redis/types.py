@@ -919,7 +919,7 @@ class MultiSet(collections.MutableMapping, Base):
             raise ValueError("Key must be instance od basestring")
         val = self.zscore(key)
         if val is None:
-            return 0
+            return self.__missing__(key)
         return val
 
     def __iter__(self):
