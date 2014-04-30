@@ -159,27 +159,22 @@ function queue_put()
 end
 
 function multiset_intersection_update()
-    local keys_values = redis.call('HGETALL', KEYS[1])
-    local all = {}
-    for i = 1, #keys_values, 2 do
-        all[keys_values[i]] = keys_values[i+1]
-    end
-    redis.call('DEL', KEYS[1])
+    local reversed = {}
     for i = 1, #ARGV, 2 do
-        local current = tonumber(all[ARGV[i]])
-        local new = tonumber(ARGV[i+1])
-        if new > 0 and current then
-            redis.call('HSET', KEYS[1], ARGV[i], math.min(new, current))
-        end
+        reversed[i] = ARGV[i + 1]
+        reversed[i + 1] = ARGV[i]
     end
+    redis.call('ZADD', KEYS[1] .. "__tmp", unpack(reversed))
+    redis.call('ZINTERSTORE', KEYS[1], 2, KEYS[1], KEYS[1] .. "__tmp", "AGGREGATE", "MIN")
+    redis.call('DEL', KEYS[1] .. "__tmp")
 end
 
 function multiset_union_update()
     for i = 1, #ARGV, 2 do
-        local current = tonumber(redis.call('HGET', KEYS[1], ARGV[i]))
-        local new = tonumber(ARGV[i+1])
+        local current = tonumber(redis.call('ZSCORE', KEYS[1], ARGV[i]))
+        local new = tonumber(ARGV[i + 1])
         if new > 0 and (not current or new > current) then
-            redis.call('HSET', KEYS[1], ARGV[i], new)
+            redis.call('ZADD', KEYS[1], new, ARGV[i])
         end
     end
 end

@@ -1,22 +1,26 @@
-
 import collections
-import contextlib
 import operator
 import os
 import time
 import uuid
 from Queue import Empty as QueueEmpty, Full as QueueFull
+from itertools import chain, repeat
+
 import redis
+from redis.client import Redis
 
 
-class HotClient(redis.Redis):
+class HotClient(object):
     """
     A Redis client wrapper that loads Lua functions and creates
     client methods for calling them.
     """
 
-    def __init__(self, *args, **kwargs):
-        super(HotClient, self).__init__(*args, **kwargs)
+    def __init__(self, client=None, *args, **kwargs):
+        self._client = client
+        if not self._client:
+            self._client = Redis(*args, **kwargs)
+
         requires_luabit = ("number_and", "number_or", "number_xor",
                            "number_lshift", "number_rshift")
         with open(self._get_lua_path("bit.lua")) as f:
@@ -53,13 +57,19 @@ class HotClient(redis.Redis):
         the same signature as regular client methodds, eg with a
         single key arg.
         """
-        script = self.register_script(code)
+        script = self._client.register_script(code)
         method = lambda key, *a, **k: script(keys=[key], args=a, **k)
         setattr(self, name, method)
+
+    def __getattr__(self, name):
+        if name in self.__dict__:
+            return super(HotClient, self).__getattribute__(name)
+        return self._client.__getattribute__(name)
 
 
 _client = None
 _config = {}
+
 
 def default_client():
     global _client
@@ -67,18 +77,10 @@ def default_client():
         _client = HotClient(**_config)
     return _client
 
+
 def configure(config):
     global _config
     _config = config
-
-@contextlib.contextmanager
-def transaction():
-    global _client
-    client = _client
-    _client = client.pipeline()
-    yield
-    _client.execute()
-    _client = client
 
 
 ####################################################################
@@ -112,8 +114,10 @@ def op_left(op):
     Returns a type instance method for the given operator, applied
     when the instance appears on the left side of the expression.
     """
+
     def method(self, other):
         return op(self.value, value_left(self, other))
+
     return method
 
 
@@ -122,8 +126,10 @@ def op_right(op):
     Returns a type instance method for the given operator, applied
     when the instance appears on the right side of the expression.
     """
+
     def method(self, other):
         return op(value_left(self, other), value_right(self, other))
+
     return method
 
 
@@ -132,9 +138,11 @@ def inplace(method_name):
     Returns a type instance method that will call the given method
     name, used for inplace operators such as __iadd__ and __imul__.
     """
+
     def method(self, other):
         getattr(self, method_name)(value_left(self, other))
         return self
+
     return method
 
 
@@ -152,7 +160,12 @@ class Base(object):
     """
 
     def __init__(self, initial=None, key=None, client=None):
-        self.client = client  # Must be first.
+        if not isinstance(client, HotClient):
+            client = HotClient(client) or default_client()
+        else:
+            client = client or default_client()
+        self.client = client
+
         self.key = key or str(uuid.uuid4())
         if initial:
             self.value = initial
@@ -172,7 +185,7 @@ class Base(object):
 
     def _dispatch(self, name):
         try:
-            func = getattr(self.client or default_client(), name)
+            func = getattr(self.client, name)
         except AttributeError:
             raise
         return lambda *a, **k: func(self.key, *a, **k)
@@ -182,57 +195,57 @@ class Bitwise(Base):
     """
     Base class for bitwise types and relevant operators.
     """
-    __and__       = op_left(operator.and_)
-    __or__        = op_left(operator.or_)
-    __xor__       = op_left(operator.xor)
-    __lshift__    = op_left(operator.lshift)
-    __rshift__    = op_left(operator.rshift)
-    __rand__      = op_right(operator.and_)
-    __ror__       = op_right(operator.or_)
-    __rxor__      = op_right(operator.xor)
-    __rlshift__   = op_right(operator.lshift)
-    __rrshift__   = op_right(operator.rshift)
+    __and__ = op_left(operator.and_)
+    __or__ = op_left(operator.or_)
+    __xor__ = op_left(operator.xor)
+    __lshift__ = op_left(operator.lshift)
+    __rshift__ = op_left(operator.rshift)
+    __rand__ = op_right(operator.and_)
+    __ror__ = op_right(operator.or_)
+    __rxor__ = op_right(operator.xor)
+    __rlshift__ = op_right(operator.lshift)
+    __rrshift__ = op_right(operator.rshift)
 
 
 class Sequential(Base):
     """
     Base class for sequence types and relevant operators.
     """
-    __add__       = op_left(operator.add)
-    __mul__       = op_left(operator.mul)
-    __radd__      = op_right(operator.add)
-    __rmul__      = op_right(operator.mul)
+    __add__ = op_left(operator.add)
+    __mul__ = op_left(operator.mul)
+    __radd__ = op_right(operator.add)
+    __rmul__ = op_right(operator.mul)
 
 
 class Numeric(Base):
     """
     Base class for numeric types and relevant operators.
     """
-    __add__       = op_left(operator.add)
-    __sub__       = op_left(operator.sub)
-    __mul__       = op_left(operator.mul)
-    __div__       = op_left(operator.div)
-    __floordiv__  = op_left(operator.floordiv)
-    __truediv__   = op_left(operator.truediv)
-    __mod__       = op_left(operator.mod)
-    __divmod__    = op_left(divmod)
-    __pow__       = op_left(operator.pow)
-    __radd__      = op_right(operator.add)
-    __rsub__      = op_right(operator.sub)
-    __rmul__      = op_right(operator.mul)
-    __rdiv__      = op_right(operator.div)
-    __rtruediv__  = op_right(operator.truediv)
+    __add__ = op_left(operator.add)
+    __sub__ = op_left(operator.sub)
+    __mul__ = op_left(operator.mul)
+    __div__ = op_left(operator.div)
+    __floordiv__ = op_left(operator.floordiv)
+    __truediv__ = op_left(operator.truediv)
+    __mod__ = op_left(operator.mod)
+    __divmod__ = op_left(divmod)
+    __pow__ = op_left(operator.pow)
+    __radd__ = op_right(operator.add)
+    __rsub__ = op_right(operator.sub)
+    __rmul__ = op_right(operator.mul)
+    __rdiv__ = op_right(operator.div)
+    __rtruediv__ = op_right(operator.truediv)
     __rfloordiv__ = op_right(operator.floordiv)
-    __rmod__      = op_right(operator.mod)
-    __rdivmod__   = op_right(divmod)
-    __rpow__      = op_right(operator.pow)
-    __iadd__      = inplace("incr")
-    __isub__      = inplace("decr")
-    __imul__      = inplace("number_multiply")
-    __idiv__      = inplace("number_divide")
+    __rmod__ = op_right(operator.mod)
+    __rdivmod__ = op_right(divmod)
+    __rpow__ = op_right(operator.pow)
+    __iadd__ = inplace("incr")
+    __isub__ = inplace("decr")
+    __imul__ = inplace("number_multiply")
+    __idiv__ = inplace("number_divide")
     __ifloordiv__ = inplace("number_floordiv")
-    __imod__      = inplace("number_mod")
-    __ipow__      = inplace("number_pow")
+    __imod__ = inplace("number_mod")
+    __ipow__ = inplace("number_pow")
 
 
 ####################################################
@@ -332,7 +345,7 @@ class Set(Bitwise):
         return [s.key for s in sets]
 
     __iand__ = inplace("intersection_update")
-    __ior__  = inplace("update")
+    __ior__ = inplace("update")
     __ixor__ = inplace("symmetric_difference_update")
     __isub__ = inplace("difference_update")
     __rsub__ = op_right(operator.sub)
@@ -606,9 +619,9 @@ class Int(Numeric, Bitwise):
         if value:
             self.set(value)
 
-    __iand__    = inplace("number_and")
-    __ior__     = inplace("number_or")
-    __ixor__    = inplace("number_xor")
+    __iand__ = inplace("number_and")
+    __ior__ = inplace("number_or")
+    __ixor__ = inplace("number_xor")
     __ilshift__ = inplace("number_lshift")
     __irshift__ = inplace("number_rshift")
 
@@ -696,11 +709,11 @@ class Queue(List):
         return item
 
     def get_nowait(self):
-        return self.get(item, block=False)
+        return self.get(block=False)
 
     def join(self):
         while not self.empty():
-            sleep(.1)
+            time.sleep(.1)
 
 
 class LifoQueue(Queue):
@@ -861,94 +874,136 @@ class DefaultDict(Dict):
         return self.setdefault(key, self.default_factory())
 
 
-class MultiSet(Dict):
+class MultiSet(collections.MutableMapping, Base):
     """
-    Redis hash <-> Python dict <-> Python's collections.Counter.
+    Redis sorted set <-> Python's collections.Counter.
     """
 
-    def __init__(self, iterable=None, key=None, **kwargs):
-        super(MultiSet, self).__init__(key=key)
+    @classmethod
+    def fromkeys(cls, iterable, v=None):
+        raise NotImplementedError(
+            'Method is undefined in context of counter.'
+            'Use cls(iterable) instead.')
+
+    @classmethod
+    def _to_kv_iterable(cls, iterable):
+        if isinstance(iterable, collections.Mapping):
+            for key, count in iterable.iteritems():
+                if not isinstance(key, basestring):
+                    raise ValueError("Key must be instance od basestring")
+                yield (key, int(count))
+        elif isinstance(iterable, basestring):
+            for key, count in collections.Counter(iterable).iteritems():
+                yield (key, count)
+        else:
+            for nested_iterable in iterable:
+                nested_list = list(nested_iterable)  # easy way
+                if len(nested_list) != 2:
+                    raise ValueError(
+                        "Nested iterable: %s has length diffrent from 2")
+                if not isinstance(nested_list[0], basestring):
+                    raise ValueError("Key must be instance od basestring")
+                yield (nested_list[0], int(nested_list[1]))
+
+    def __init__(self, initial=None, client=None, iterable=None, key=None, **kwargs):
+        super(MultiSet, self).__init__(initial=initial, client=client, key=key)
         self.update(iterable=iterable, **kwargs)
 
-    @property
-    def value(self):
-        value = super(MultiSet, self).value
-        kwargs = dict([(k, int(v)) for k, v in value.items()])
-        return collections.Counter(**kwargs)
+    def __len__(self):
+        return self.zcard()
 
-    __add__  = op_left(operator.add)
-    __sub__  = op_left(operator.sub)
-    __and__  = op_left(operator.and_)
-    __or__   = op_left(operator.or_)
+    def __getitem__(self, key):
+        if not isinstance(key, basestring):
+            raise ValueError("Key must be instance od basestring")
+        val = self.zscore(key)
+        if val is None:
+            raise KeyError("Key: %s does no exist in collection" % key)
+        return val
+
+    def __iter__(self):
+        keys = self.zrange(0, -1)
+        for key in keys:
+            yield key
+
+    def __setitem__(self, key, value):
+        if not isinstance(key, basestring):
+            raise ValueError("Key must be instance od basestring")
+        self.zadd(key, int(value))
+
+    def __delitem__(self, key):
+        self.zrem(key)
+
+    __add__ = op_left(operator.add)
+    __sub__ = op_left(operator.sub)
+    __and__ = op_left(operator.and_)
+    __or__ = op_left(operator.or_)
     __radd__ = op_right(operator.add)
     __rsub__ = op_right(operator.sub)
     __rand__ = op_right(operator.and_)
-    __ror__  = op_right(operator.or_)
+    __ror__ = op_right(operator.or_)
     __iadd__ = inplace("update")
     __isub__ = inplace("subtract")
     __iand__ = inplace("intersection_update")
-    __ior__  = inplace("union_update")
+    __ior__ = inplace("union_update")
 
-    def __delitem__(self, name):
-        try:
-            super(MultiSet, self).__delitem__(name)
-        except KeyError:
-            pass
+    @property
+    def value(self):
+        return collections.Counter(self.most_common())
+
+    @value.setter
+    def value(self, value):
+        if not isinstance(value, dict):
+            try:
+                value = dict(value)
+            except TypeError:
+                value = None
+        if value:
+            self.update(value)
 
     def __repr__(self):
         bits = (self.__class__.__name__, repr(dict(self.value)), self.key)
         return "%s(%s, '%s')" % bits
 
-    def values(self):
-        values = super(MultiSet, self).values()
-        return [int(v) for v in values]
-
-    def get(self, key, default=None):
-        value = self.hget(key)
-        return int(value) if value is not None else default
-
-    def _merge(self, iterable=None, **kwargs):
-        if iterable:
-            try:
-                items = iterable.iteritems()
-            except AttributeError:
-                for k in iterable:
-                    kwargs[k] = kwargs.get(k, 0) + 1
-            else:
-                for k, v in items:
-                    kwargs[k] = kwargs.get(k, 0) + v
-        return kwargs.items()
-
-    def _flatten(self, iterable, **kwargs):
-        for k, v in self._merge(iterable, **kwargs):
-            yield k
-            yield v
-
-    def _update(self, iterable, multiplier, **kwargs):
-        for k, v in self._merge(iterable, **kwargs):
-            self.hincrby(k, v * multiplier)
-
-    def update(self, iterable=None, **kwargs):
-        self._update(iterable, 1, **kwargs)
-
-    def subtract(self, iterable=None, **kwargs):
-        self._update(iterable, -1, **kwargs)
-
-    def intersection_update(self, iterable=None, **kwargs):
-        self.multiset_intersection_update(*self._flatten(iterable, **kwargs))
-
-    def union_update(self, iterable=None, **kwargs):
-        self.multiset_union_update(*self._flatten(iterable, **kwargs))
-
-    def elements(self):
-        for k, count in self.iteritems():
-            for i in range(count):
-                yield k
+    def __missing__(self, key):
+        return 0
 
     def most_common(self, n=None):
-        values = sorted(self.iteritems(), key=lambda v: v[1], reverse=True)
-        if n:
-            values = values[:n]
-        return values
+        if n == 0:
+            return []
+        if n is None:
+            n = -1
+        return self.zrange(0, int(n), True, True, int)
+
+    def elements(self):
+        return chain.from_iterable(
+            (repeat(key, count) for key, count in self.most_common()))
+
+    def update(self, iterable=None, **kwds):
+        iterables = []
+        if iterable is not None:
+            iterables.append(self._to_kv_iterable(iterable))
+        if kwds:
+            iterables.append(self._to_kv_iterable(kwds))
+        if iterables:
+            kvs = list(chain.from_iterable(iterables))
+            with self.pipeline(transaction=False) as pipe:
+                for key, value in kvs:
+                    pipe.zincrby(key, value)
+
+    def subtract(self, iterable=None, **kwds):
+        iterables = []
+        if iterable is not None:
+            iterables.append(self._to_kv_iterable(iterable))
+        if kwds:
+            iterables.append(self._to_kv_iterable(kwds))
+        if iterables:
+            kvs = list(chain.from_iterable(iterables))
+            with self.pipeline(transaction=False) as pipe:
+                for key, value in kvs:
+                    pipe.zincrby(key, -value)
+
+    def copy(self):
+        return self.__class__(self.values)
+
 
 collections.MutableMapping.register(MultiSet)
