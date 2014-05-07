@@ -5,6 +5,8 @@ import time
 import uuid
 from Queue import Empty as QueueEmpty, Full as QueueFull
 from itertools import chain, repeat
+from redis import ResponseError
+from redis.client import Redis
 
 import redis
 from redis.client import Redis, zset_score_pairs
@@ -351,7 +353,7 @@ class List(Sequential):
     def __setitem__(self, i, item):
         try:
             self.lset(i, item)
-        except redis.exceptions.ResponseError:
+        except ResponseError:
             raise IndexError
 
     def __getitem__(self, i):

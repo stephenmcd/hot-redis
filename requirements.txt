@@ -1,0 +1,2 @@
+redis>=2.9.1
+sphinx-me>=0.2.1

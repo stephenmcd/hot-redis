@@ -4,9 +4,12 @@ import collections
 import time
 import Queue
 import unittest
+
 import hot_redis
 
+
 keys = []
+
 
 
 def base_wrapper(init):
@@ -14,7 +17,9 @@ def base_wrapper(init):
         init(*args, **kwargs)
         keys.append(args[0].key)
 
+
     return wrapper
+
 
 
 hot_redis.Base.__init__ = base_wrapper(hot_redis.Base.__init__)
@@ -110,6 +115,7 @@ class LuaMultiMethodsTests(BaseTestCase):
             client.rank_lists_by_length('only_one_key'),
 
 
+class ListTests(BaseTestCase):
 class ListTests(BaseTestCase):
     def test_value(self):
         a = ["wagwaan", "hot", "skull"]
@@ -946,6 +952,7 @@ class QueueTests(BaseTestCase):
 
 
 class CounterTest(object):
+
     def test_value(self):
         a = "wagwaan"
         b = {"hot": 420, "skull": -9000}
