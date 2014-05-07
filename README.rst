@@ -3,6 +3,8 @@
 
 Created by `Stephen McDonald <http://twitter.com/stephen_mcd>`_
 
+Upgraded and maintained by: Robert Głowski and Jan Mizgajski
+
 Introduction
 ============
 
@@ -145,8 +147,9 @@ Semaphore           threading.Semaphore           list        Extension of ``Bou
 Lock                threading.Lock                list        Extension of ``BoundedSemaphore`` with a queue size of 1
 RLock               threading.RLock               list        Extension of ``Lock`` allowing multiple ``acquire`` calls
 DefaultDict         collections.DefaultDict       hash
-MultiSet            collections.Counter           hash
+MultiSet            collections.Counter           sorted set
 ==================  ============================  ==========  ===============
+
 
 .. _`redis-py`: https://github.com/andymccurdy/redis-py
 .. _`Redis`: http://redis.io

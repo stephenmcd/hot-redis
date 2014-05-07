@@ -4,16 +4,21 @@ import collections
 import time
 import Queue
 import unittest
+
 import hot_redis
 
 
 keys = []
 
+
 def base_wrapper(init):
     def wrapper(*args, **kwargs):
         init(*args, **kwargs)
         keys.append(args[0].key)
+
+
     return wrapper
+
 
 hot_redis.Base.__init__ = base_wrapper(hot_redis.Base.__init__)
 
@@ -25,155 +30,242 @@ class BaseTestCase(unittest.TestCase):
             client.delete(keys.pop())
 
 
+class LuaMultiMethodsTests(BaseTestCase):
+    def setUp(self):
+        self.longMessage = True
+
+    def test_rank_lists_by_length(self):
+        lengths = (61., 60., 5., 4., 3., 2., 1.)
+        _keys = [("l%d" % length) for length in lengths]
+        keys_with_lengths = zip(_keys, lengths)
+        lists = [
+            hot_redis.List(range(int(length)), key=key)
+            for key, length
+            in keys_with_lengths
+        ]
+        client = hot_redis.default_client()
+
+        calls = [
+            (lambda i: [x for x in i], 'iter'),
+            (lambda i: i[:], '[:]'),
+            (lambda i: i[3:4], '[3:4]'),
+            (lambda i: i[-4:3], '[-4:3]'),
+            (lambda i: i[2:], '[2:]'),
+            (lambda i: i[:2], '[:2]'),
+            #empty),
+            (lambda i: i[2:1], '[2:1]'),
+            (lambda i: i[-1:-2], '[-1:-2]')
+        ]
+
+        for call, code in calls:
+            expected = call(keys_with_lengths)
+            result = call(client.rank_lists_by_length(*_keys))
+            self.assertEquals(
+                result,
+                expected,
+                "Results not equal when called with call={code}, "
+                "got result={result}, expected={expected}".format(
+                    code=code, result=result,
+                    expected=expected
+                )
+            )
+
+        with self.assertRaises(ValueError):
+            client.rank_lists_by_length('only_one_key'),
+
+    def test_rank_sets_by_cardinality(self):
+        cardinalities = (61., 60., 5., 4., 3., 2., 1.)
+        _keys = [("l%d" % card) for card in cardinalities]
+        keys_with_cardinalities = zip(_keys, cardinalities)
+        sets = [
+            hot_redis.Set(range(int(card)), key=key)
+            for key, card
+            in keys_with_cardinalities
+        ]
+        client = hot_redis.default_client()
+
+        calls = [
+            (lambda i: [x for x in i], 'iter'),
+            (lambda i: i[:], '[:]'),
+            (lambda i: i[3:4], '[3:4]'),
+            (lambda i: i[-4:3], '[-4:3]'),
+            (lambda i: i[2:], '[2:]'),
+            (lambda i: i[:2], '[:2]'),
+            #empty),
+            (lambda i: i[2:1], '[2:1]'),
+            (lambda i: i[-1:-2], '[-1:-2]')
+        ]
+
+        for call, code in calls:
+            expected = call(keys_with_cardinalities)
+            result = call(client.rank_sets_by_cardinality(*_keys))
+            self.assertEquals(
+                result,
+                expected,
+                "Results not equal when called with call={code}, "
+                "got result={result}, expected={expected}".format(
+                    code=code, result=result,
+                    expected=expected
+                )
+            )
+
+        with self.assertRaises(ValueError):
+            client.rank_lists_by_length('only_one_key'),
+
+
 class ListTests(BaseTestCase):
 
-    def test_value(self):
-        a = ["wagwaan", "hot", "skull"]
-        self.assertEquals(hot_redis.List(a), a)
 
-    def test_empty(self):
-        self.assertEquals(hot_redis.List(), [])
+    class ListTests(BaseTestCase):
+        def test_value(self):
+            a = ["wagwaan", "hot", "skull"]
+            self.assertEquals(hot_redis.List(a), a)
 
-    def test_iter(self):
-        a = ["wagwaan", "hot", "skull"]
-        for i, x in enumerate(hot_redis.List(a)):
-            self.assertEquals(x, a[i])
+        def test_empty(self):
+            self.assertEquals(hot_redis.List(), [])
 
-    def test_add(self):
-        a = ["wagwaan", "hot", "skull"]
-        b = ["nba", "hang", "time"]
-        self.assertEquals(a + b, hot_redis.List(a) + hot_redis.List(b))
-        self.assertEquals(a + b, hot_redis.List(a) + b)
-        c = hot_redis.List(a)
-        d = hot_redis.List(b)
-        d += c
-        c += b
-        self.assertEquals(a + b, c)
-        self.assertEquals(b + a, d)
+        def test_iter(self):
+            a = ["wagwaan", "hot", "skull"]
+            for i, x in enumerate(hot_redis.List(a)):
+                self.assertEquals(x, a[i])
 
-    def test_mul(self):
-        a = ["wagwaan", "hot", "skull"]
-        b = hot_redis.List(a)
-        i = 9000
-        self.assertEquals(a * i, hot_redis.List(a) * i)
-        b *= i
-        self.assertEquals(a * i, b)
+        def test_add(self):
+            a = ["wagwaan", "hot", "skull"]
+            b = ["nba", "hang", "time"]
+            self.assertEquals(a + b, hot_redis.List(a) + hot_redis.List(b))
+            self.assertEquals(a + b, hot_redis.List(a) + b)
+            c = hot_redis.List(a)
+            d = hot_redis.List(b)
+            d += c
+            c += b
+            self.assertEquals(a + b, c)
+            self.assertEquals(b + a, d)
 
-    def test_len(self):
-        a = ["wagwaan", "hot", "skull"]
-        self.assertEquals(len(a), len(hot_redis.List(a)))
+        def test_mul(self):
+            a = ["wagwaan", "hot", "skull"]
+            b = hot_redis.List(a)
+            i = 9000
+            self.assertEquals(a * i, hot_redis.List(a) * i)
+            b *= i
+            self.assertEquals(a * i, b)
 
-    def test_get(self):
-        a = ["wagwaan", "hot", "skull"] * 10
-        b = hot_redis.List(a)
-        self.assertEquals(a[4], b[4])
-        self.assertEquals(a[3:12], b[3:12])
-        self.assertEquals(a[:-5], b[:-5])
-        self.assertRaises(IndexError, lambda: b[len(b)])
+        def test_len(self):
+            a = ["wagwaan", "hot", "skull"]
+            self.assertEquals(len(a), len(hot_redis.List(a)))
 
-    def test_set(self):
-        a = ["wagwaan", "hot", "skull"]
-        b = hot_redis.List(a)
-        i = "popcaan"
-        a[1] = i
-        self.assertNotEquals(a, b)
-        b[1] = i
-        self.assertEquals(a, b)
-        # todo: slice
+        def test_get(self):
+            a = ["wagwaan", "hot", "skull"] * 10
+            b = hot_redis.List(a)
+            self.assertEquals(a[4], b[4])
+            self.assertEquals(a[3:12], b[3:12])
+            self.assertEquals(a[:-5], b[:-5])
+            self.assertEquals(a[:2], b[:2])
+            self.assertEquals(a[2:], b[2:])
+            self.assertEquals(a[:], b[:])
+            self.assertRaises(IndexError, lambda: b[len(b)])
 
-    def test_del(self):
-        a = ["wagwaan", "hot", "skull"]
-        b = hot_redis.List(a)
-        del a[1]
-        self.assertNotEquals(a, b)
-        del b[1]
-        self.assertEquals(a, b)
-        # todo: slice?
+        def test_set(self):
+            a = ["wagwaan", "hot", "skull"]
+            b = hot_redis.List(a)
+            i = "popcaan"
+            a[1] = i
+            self.assertNotEquals(a, b)
+            b[1] = i
+            self.assertEquals(a, b)
+            # todo: slice
 
-    def test_len(self):
-        a = ["wagwaan", "hot", "skull"]
-        b = hot_redis.List(a)
-        self.assertEquals(len(a), len(b))
+        def test_del(self):
+            a = ["wagwaan", "hot", "skull"]
+            b = hot_redis.List(a)
+            del a[1]
+            self.assertNotEquals(a, b)
+            del b[1]
+            self.assertEquals(a, b)
+            # todo: slice?
 
-    def test_contains(self):
-        a = ["wagwaan", "hot", "skull"]
-        b = hot_redis.List(a)
-        self.assertIn("wagwaan", a)
-        self.assertNotIn("hotskull", a)
+        def test_len(self):
+            a = ["wagwaan", "hot", "skull"]
+            b = hot_redis.List(a)
+            self.assertEquals(len(a), len(b))
 
-    def test_extend(self):
-        a = ["wagwaan", "hot", "skull"]
-        b = ["nba", "hang", "time"]
-        c = hot_redis.List(a)
-        a.extend(b)
-        c.extend(b)
-        self.assertEquals(a, c)
+        def test_contains(self):
+            a = ["wagwaan", "hot", "skull"]
+            b = hot_redis.List(a)
+            self.assertIn("wagwaan", a)
+            self.assertNotIn("hotskull", a)
 
-    def test_append(self):
-        a = ["wagwaan", "hot", "skull"]
-        b = hot_redis.List(a)
-        i = "popcaan"
-        a.append(i)
-        b.append(i)
-        self.assertEquals(a, b)
+        def test_extend(self):
+            a = ["wagwaan", "hot", "skull"]
+            b = ["nba", "hang", "time"]
+            c = hot_redis.List(a)
+            a.extend(b)
+            c.extend(b)
+            self.assertEquals(a, c)
 
-    def test_insert(self):
-        a = ["wagwaan", "hot", "skull"]
-        b = hot_redis.List(a)
-        i = "popcaan"
-        a.insert(1, i)
-        b.insert(1, i)
-        self.assertEquals(a, b)
+        def test_append(self):
+            a = ["wagwaan", "hot", "skull"]
+            b = hot_redis.List(a)
+            i = "popcaan"
+            a.append(i)
+            b.append(i)
+            self.assertEquals(a, b)
 
-    def test_pop(self):
-        a = ["wagwaan", "hot", "skull"] * 10
-        b = hot_redis.List(a)
-        a.pop()
-        b.pop()
-        self.assertEquals(a, b)
-        a.pop(0)
-        b.pop(0)
-        self.assertEquals(a, b)
-        a.pop(-1)
-        b.pop(-1)
-        self.assertEquals(a, b)
-        a.pop(20)
-        b.pop(20)
-        self.assertEquals(a, b)
+        def test_insert(self):
+            a = ["wagwaan", "hot", "skull"]
+            b = hot_redis.List(a)
+            i = "popcaan"
+            a.insert(1, i)
+            b.insert(1, i)
+            self.assertEquals(a, b)
 
-    def test_reverse(self):
-        a = ["wagwaan", "hot", "skull"]
-        b = hot_redis.List(a)
-        a.reverse()
-        b.reverse()
-        self.assertEquals(a, b)
+        def test_pop(self):
+            a = ["wagwaan", "hot", "skull"] * 10
+            b = hot_redis.List(a)
+            a.pop()
+            b.pop()
+            self.assertEquals(a, b)
+            a.pop(0)
+            b.pop(0)
+            self.assertEquals(a, b)
+            a.pop(-1)
+            b.pop(-1)
+            self.assertEquals(a, b)
+            a.pop(20)
+            b.pop(20)
+            self.assertEquals(a, b)
 
-    def test_index(self):
-        a = ["wagwaan", "hot", "skull"] * 10
-        b = hot_redis.List(a)
-        c = "wagwaan"
-        self.assertEquals(a.index(c), b.index(c))
-        self.assertRaises(ValueError, lambda: b.index("popcaan"))
+        def test_reverse(self):
+            a = ["wagwaan", "hot", "skull"]
+            b = hot_redis.List(a)
+            a.reverse()
+            b.reverse()
+            self.assertEquals(a, b)
 
-    def test_count(self):
-        a = ["wagwaan", "hot", "skull"] * 10
-        b = hot_redis.List(a)
-        self.assertEquals(a.count("wagwaan"), b.count("wagwaan"))
-        self.assertEquals(a.count("popcaan"), b.count("popcaan"))
+        def test_index(self):
+            a = ["wagwaan", "hot", "skull"] * 10
+            b = hot_redis.List(a)
+            c = "wagwaan"
+            self.assertEquals(a.index(c), b.index(c))
+            self.assertRaises(ValueError, lambda: b.index("popcaan"))
 
-    def test_sort(self):
-        a = ["wagwaan", "hot", "skull"] * 10
-        b = hot_redis.List(a)
-        a.sort()
-        b.sort()
-        self.assertEquals(a, b)
-        a.sort(reverse=True)
-        b.sort(reverse=True)
-        self.assertEquals(a, b)
+        def test_count(self):
+            a = ["wagwaan", "hot", "skull"] * 10
+            b = hot_redis.List(a)
+            self.assertEquals(a.count("wagwaan"), b.count("wagwaan"))
+            self.assertEquals(a.count("popcaan"), b.count("popcaan"))
+
+        def test_sort(self):
+            a = ["wagwaan", "hot", "skull"] * 10
+            b = hot_redis.List(a)
+            a.sort()
+            b.sort()
+            self.assertEquals(a, b)
+            a.sort(reverse=True)
+            b.sort(reverse=True)
+            self.assertEquals(a, b)
 
 
 class SetTests(BaseTestCase):
-
     def test_value(self):
         a = set(["wagwaan", "hot", "skull"])
         self.assertEquals(hot_redis.Set(a), a)
@@ -248,7 +340,8 @@ class SetTests(BaseTestCase):
         self.assertEquals(e, d.intersection(b, c))
         self.assertEquals(e, d.intersection(hot_redis.Set(b), c))
         self.assertEquals(e, d.intersection(b, hot_redis.Set(c)))
-        self.assertEquals(e, d.intersection(hot_redis.Set(b), hot_redis.Set(c)))
+        self.assertEquals(e,
+                          d.intersection(hot_redis.Set(b), hot_redis.Set(c)))
 
     def test_intersection_update(self):
         a = set(["wagwaan", "hot", "skull"])
@@ -362,7 +455,6 @@ class SetTests(BaseTestCase):
 
 
 class DictTests(BaseTestCase):
-
     def test_value(self):
         a = {"wagwaan": "popcaan", "flute": "don"}
         self.assertEquals(hot_redis.Dict(a), a)
@@ -426,8 +518,10 @@ class DictTests(BaseTestCase):
         a = hot_redis.Dict({"wagwaan": "popcaan", "flute": "don"})
         del a["wagwaan"]
         self.assertRaises(KeyError, lambda: a["wagwaan"])
+
         def del_missing():
             del a["hotskull"]
+
         self.assertRaises(KeyError, del_missing)
 
     def test_len(self):
@@ -472,7 +566,6 @@ class DictTests(BaseTestCase):
 
 
 class StringTests(BaseTestCase):
-
     def test_value(self):
         a = "wagwaan"
         self.assertEquals(hot_redis.String(a), a)
@@ -547,13 +640,14 @@ class StringTests(BaseTestCase):
         self.assertEquals(a, d)
         self.assertEquals(c.key, keyC)
         self.assertNotEquals(d.key, keyD)
+
         def immutable_set():
             d[0] = b
+
         self.assertRaises(TypeError, immutable_set)
 
 
 class IntTests(BaseTestCase):
-
     def test_value(self):
         a = 420
         self.assertEquals(hot_redis.Int(a), a)
@@ -691,7 +785,6 @@ class IntTests(BaseTestCase):
 
 
 class FloatTests(BaseTestCase):
-
     def test_value(self):
         a = 420.666
         self.assertAlmostEqual(hot_redis.Float(a), a)
@@ -760,7 +853,8 @@ class FloatTests(BaseTestCase):
         b = 20.666
         c = 4
         d = 2
-        self.assertAlmostEqual(a ** b, hot_redis.Float(a) ** hot_redis.Float(b))
+        self.assertAlmostEqual(a ** b,
+                               hot_redis.Float(a) ** hot_redis.Float(b))
         self.assertAlmostEqual(a ** b, hot_redis.Float(a) ** b)
         e = hot_redis.Float(a)
         f = hot_redis.Float(b)
@@ -771,7 +865,6 @@ class FloatTests(BaseTestCase):
 
 
 class QueueTests(BaseTestCase):
-
     def test_put(self):
         a = "wagwaan"
         b = "hotskull"
@@ -858,8 +951,7 @@ class QueueTests(BaseTestCase):
         self.assertEquals(q.qsize(), 0)
 
 
-class CounterTests(BaseTestCase):
-
+class CounterTest(object):
     def test_value(self):
         a = "wagwaan"
         b = {"hot": 420, "skull": -9000}
@@ -997,24 +1089,12 @@ class CounterTests(BaseTestCase):
         self.assertItemsEqual(e.elements(), f.elements())
 
     def test_most_common(self):
-        a = "wagwaan"
+        a = "wanwaa"
         b = collections.Counter(a)
         c = hot_redis.MultiSet(a)
         d = 420
         self.assertEqual(c.most_common(d), b.most_common(d))
         self.assertEqual(c.most_common(), b.most_common())
-
-
-class TransactionTests(BaseTestCase):
-
-    def test_transaction(self):
-        with_transaction = hot_redis.List([1])
-        without_transaction = hot_redis.List(key=with_transaction.key,
-                                             client=hot_redis.HotClient())
-        with hot_redis.transaction():
-            with_transaction.append(1)
-            self.assertEquals(len(without_transaction), 1)
-        self.assertEquals(len(without_transaction), 2)
 
 
 if __name__ == "__main__":
