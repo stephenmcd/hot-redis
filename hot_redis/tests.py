@@ -1,18 +1,23 @@
-#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import collections
 import time
 import Queue
 import unittest
+
 import hot_redis
 
+
 keys = []
+
 
 def base_wrapper(init):
     def wrapper(*args, **kwargs):
         init(*args, **kwargs)
         keys.append(args[0].key)
+
     return wrapper
+
 
 hot_redis.Base.__init__ = base_wrapper(hot_redis.Base.__init__)
 
@@ -25,7 +30,6 @@ class BaseTestCase(unittest.TestCase):
 
 
 class ListTests(BaseTestCase):
-
     def test_value(self):
         a = ["wagwaan", "hot", "skull"]
         self.assertEquals(hot_redis.List(a), a)
@@ -172,7 +176,6 @@ class ListTests(BaseTestCase):
 
 
 class SetTests(BaseTestCase):
-
     def test_value(self):
         a = set(["wagwaan", "hot", "skull"])
         self.assertEquals(hot_redis.Set(a), a)
@@ -361,7 +364,6 @@ class SetTests(BaseTestCase):
 
 
 class DictTests(BaseTestCase):
-
     def test_value(self):
         a = {"wagwaan": "popcaan", "flute": "don"}
         self.assertEquals(hot_redis.Dict(a), a)
@@ -425,8 +427,10 @@ class DictTests(BaseTestCase):
         a = hot_redis.Dict({"wagwaan": "popcaan", "flute": "don"})
         del a["wagwaan"]
         self.assertRaises(KeyError, lambda: a["wagwaan"])
+
         def del_missing():
             del a["hotskull"]
+
         self.assertRaises(KeyError, del_missing)
 
     def test_len(self):
@@ -471,7 +475,6 @@ class DictTests(BaseTestCase):
 
 
 class StringTests(BaseTestCase):
-
     def test_value(self):
         a = "wagwaan"
         self.assertEquals(hot_redis.String(a), a)
@@ -546,13 +549,14 @@ class StringTests(BaseTestCase):
         self.assertEquals(a, d)
         self.assertEquals(c.key, keyC)
         self.assertNotEquals(d.key, keyD)
+
         def immutable_set():
             d[0] = b
+
         self.assertRaises(TypeError, immutable_set)
 
 
 class IntTests(BaseTestCase):
-
     def test_value(self):
         a = 420
         self.assertEquals(hot_redis.Int(a), a)
@@ -690,7 +694,6 @@ class IntTests(BaseTestCase):
 
 
 class FloatTests(BaseTestCase):
-
     def test_value(self):
         a = 420.666
         self.assertAlmostEqual(hot_redis.Float(a), a)
@@ -770,7 +773,6 @@ class FloatTests(BaseTestCase):
 
 
 class QueueTests(BaseTestCase):
-
     def test_put(self):
         a = "wagwaan"
         b = "hotskull"
@@ -858,7 +860,6 @@ class QueueTests(BaseTestCase):
 
 
 class CounterTest(object):
-
     def test_value(self):
         a = "wagwaan"
         b = {"hot": 420, "skull": -9000}
