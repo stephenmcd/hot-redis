@@ -8,11 +8,14 @@ import hot_redis
 
 keys = []
 
+
 def base_wrapper(init):
     def wrapper(*args, **kwargs):
         init(*args, **kwargs)
         keys.append(args[0].key)
+
     return wrapper
+
 
 hot_redis.Base.__init__ = base_wrapper(hot_redis.Base.__init__)
 
@@ -24,8 +27,90 @@ class BaseTestCase(unittest.TestCase):
             client.delete(keys.pop())
 
 
-class ListTests(BaseTestCase):
+class LuaMultiMethodsTests(BaseTestCase):
+    def setUp(self):
+        self.longMessage = True
 
+    def test_rank_lists_by_length(self):
+        lengths = (61., 60., 5., 4., 3., 2., 1.)
+        _keys = [("l%d" % length) for length in lengths]
+        keys_with_lengths = zip(_keys, lengths)
+        lists = [
+            hot_redis.List(range(int(length)), key=key)
+            for key, length
+            in keys_with_lengths
+        ]
+        client = hot_redis.default_client()
+
+        calls = [
+            (lambda i: [x for x in i], 'iter'),
+            (lambda i: i[:], '[:]'),
+            (lambda i: i[3:4], '[3:4]'),
+            (lambda i: i[-4:3], '[-4:3]'),
+            (lambda i: i[2:], '[2:]'),
+            (lambda i: i[:2], '[:2]'),
+            #empty),
+            (lambda i: i[2:1], '[2:1]'),
+            (lambda i: i[-1:-2], '[-1:-2]')
+        ]
+
+        for call, code in calls:
+            expected = call(keys_with_lengths)
+            result = call(client.rank_lists_by_length(*_keys))
+            self.assertEquals(
+                result,
+                expected,
+                "Results not equal when called with call={code}, "
+                "got result={result}, expected={expected}".format(
+                    code=code, result=result,
+                    expected=expected
+                )
+            )
+
+        with self.assertRaises(ValueError):
+            client.rank_lists_by_length('only_one_key'),
+
+    def test_rank_sets_by_cardinality(self):
+        cardinalities = (61., 60., 5., 4., 3., 2., 1.)
+        _keys = [("l%d" % card) for card in cardinalities]
+        keys_with_cardinalities = zip(_keys, cardinalities)
+        sets = [
+            hot_redis.Set(range(int(card)), key=key)
+            for key, card
+            in keys_with_cardinalities
+        ]
+        client = hot_redis.default_client()
+
+        calls = [
+            (lambda i: [x for x in i], 'iter'),
+            (lambda i: i[:], '[:]'),
+            (lambda i: i[3:4], '[3:4]'),
+            (lambda i: i[-4:3], '[-4:3]'),
+            (lambda i: i[2:], '[2:]'),
+            (lambda i: i[:2], '[:2]'),
+            #empty),
+            (lambda i: i[2:1], '[2:1]'),
+            (lambda i: i[-1:-2], '[-1:-2]')
+        ]
+
+        for call, code in calls:
+            expected = call(keys_with_cardinalities)
+            result = call(client.rank_sets_by_cardinality(*_keys))
+            self.assertEquals(
+                result,
+                expected,
+                "Results not equal when called with call={code}, "
+                "got result={result}, expected={expected}".format(
+                    code=code, result=result,
+                    expected=expected
+                )
+            )
+
+        with self.assertRaises(ValueError):
+            client.rank_lists_by_length('only_one_key'),
+
+
+class ListTests(BaseTestCase):
     def test_value(self):
         a = ["wagwaan", "hot", "skull"]
         self.assertEquals(hot_redis.List(a), a)
@@ -68,6 +153,9 @@ class ListTests(BaseTestCase):
         self.assertEquals(a[4], b[4])
         self.assertEquals(a[3:12], b[3:12])
         self.assertEquals(a[:-5], b[:-5])
+        self.assertEquals(a[:2], b[:2])
+        self.assertEquals(a[2:], b[2:])
+        self.assertEquals(a[:], b[:])
         self.assertRaises(IndexError, lambda: b[len(b)])
 
     def test_set(self):
@@ -172,7 +260,6 @@ class ListTests(BaseTestCase):
 
 
 class SetTests(BaseTestCase):
-
     def test_value(self):
         a = set(["wagwaan", "hot", "skull"])
         self.assertEquals(hot_redis.Set(a), a)
@@ -247,7 +334,8 @@ class SetTests(BaseTestCase):
         self.assertEquals(e, d.intersection(b, c))
         self.assertEquals(e, d.intersection(hot_redis.Set(b), c))
         self.assertEquals(e, d.intersection(b, hot_redis.Set(c)))
-        self.assertEquals(e, d.intersection(hot_redis.Set(b), hot_redis.Set(c)))
+        self.assertEquals(e,
+                          d.intersection(hot_redis.Set(b), hot_redis.Set(c)))
 
     def test_intersection_update(self):
         a = set(["wagwaan", "hot", "skull"])
@@ -361,7 +449,6 @@ class SetTests(BaseTestCase):
 
 
 class DictTests(BaseTestCase):
-
     def test_value(self):
         a = {"wagwaan": "popcaan", "flute": "don"}
         self.assertEquals(hot_redis.Dict(a), a)
@@ -425,8 +512,10 @@ class DictTests(BaseTestCase):
         a = hot_redis.Dict({"wagwaan": "popcaan", "flute": "don"})
         del a["wagwaan"]
         self.assertRaises(KeyError, lambda: a["wagwaan"])
+
         def del_missing():
             del a["hotskull"]
+
         self.assertRaises(KeyError, del_missing)
 
     def test_len(self):
@@ -471,7 +560,6 @@ class DictTests(BaseTestCase):
 
 
 class StringTests(BaseTestCase):
-
     def test_value(self):
         a = "wagwaan"
         self.assertEquals(hot_redis.String(a), a)
@@ -546,13 +634,14 @@ class StringTests(BaseTestCase):
         self.assertEquals(a, d)
         self.assertEquals(c.key, keyC)
         self.assertNotEquals(d.key, keyD)
+
         def immutable_set():
             d[0] = b
+
         self.assertRaises(TypeError, immutable_set)
 
 
 class IntTests(BaseTestCase):
-
     def test_value(self):
         a = 420
         self.assertEquals(hot_redis.Int(a), a)
@@ -690,7 +779,6 @@ class IntTests(BaseTestCase):
 
 
 class FloatTests(BaseTestCase):
-
     def test_value(self):
         a = 420.666
         self.assertAlmostEqual(hot_redis.Float(a), a)
@@ -759,7 +847,8 @@ class FloatTests(BaseTestCase):
         b = 20.666
         c = 4
         d = 2
-        self.assertAlmostEqual(a ** b, hot_redis.Float(a) ** hot_redis.Float(b))
+        self.assertAlmostEqual(a ** b,
+                               hot_redis.Float(a) ** hot_redis.Float(b))
         self.assertAlmostEqual(a ** b, hot_redis.Float(a) ** b)
         e = hot_redis.Float(a)
         f = hot_redis.Float(b)
@@ -770,7 +859,6 @@ class FloatTests(BaseTestCase):
 
 
 class QueueTests(BaseTestCase):
-
     def test_put(self):
         a = "wagwaan"
         b = "hotskull"
@@ -858,7 +946,6 @@ class QueueTests(BaseTestCase):
 
 
 class CounterTest(object):
-
     def test_value(self):
         a = "wagwaan"
         b = {"hot": 420, "skull": -9000}
