@@ -3,9 +3,10 @@ import collections
 import contextlib
 import operator
 import os
+import Queue as _Queue
 import time
 import uuid
-from Queue import Empty as QueueEmpty, Full as QueueFull
+
 import redis
 
 
@@ -50,7 +51,7 @@ class HotClient(redis.Redis):
         """
         Registers the code snippet as a Lua script, and binds the
         script to the client as a method that can be called with
-        the same signature as regular client methodds, eg with a
+        the same signature as regular client methods, eg with a
         single key arg.
         """
         script = self.register_script(code)
@@ -678,7 +679,7 @@ class Queue(List):
                 if self.queue_put(item, self.maxsize):
                     break
                 if timeout is not None and time.time() - start >= timeout:
-                    raise QueueFull
+                    raise _Queue.Full
                 time.sleep(.1)
 
     def put_nowait(self, item):
@@ -692,7 +693,7 @@ class Queue(List):
         else:
             item = self.pop()
         if item is None:
-            raise QueueEmpty
+            raise _Queue.Empty
         return item
 
     def get_nowait(self):
@@ -767,7 +768,7 @@ class BoundedSemaphore(Queue):
     def acquire(self, block=True, timeout=None):
         try:
             self.put(1, block, timeout)
-        except QueueFull:
+        except _Queue.Full:
             return False
         self.acquired = True
         return True
