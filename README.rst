@@ -123,7 +123,7 @@ Transactions
 ============
 
 Basic support for thread-safe transactions are provided using the
-Redis ``MULTI`` command::
+Redis ``MULTI`` nad ``EXEC`` commands::
 
     >>> from hot_redis import List, Queue, transaction
     >>> my_list = List(key="foo")
