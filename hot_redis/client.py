@@ -81,6 +81,10 @@ def transaction():
     """
     client = default_client()
     _thread.client = client.pipeline()
-    yield
-    _thread.client.execute()
-    _thread.client = client
+    try:
+        yield
+        _thread.client.execute()
+    finally:
+        _thread.client = client
+
+
