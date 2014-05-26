@@ -573,7 +573,7 @@ class Float(Numeric):
 
 class Queue(List):
     """
-    Redis list <-> Python list <-> Python's Queue.Queue.
+    Redis list <-> Python list <-> Python's Queue.
     """
 
     maxsize = 0
