@@ -4,6 +4,7 @@ import contextlib
 import operator
 import os
 import Queue as _Queue
+import threading
 import time
 import uuid
 
@@ -59,27 +60,36 @@ class HotClient(redis.Redis):
         setattr(self, name, method)
 
 
-_client = None
+
+_thread = threading.local()
 _config = {}
 
+
 def default_client():
-    global _client
-    if _client is None:
-        _client = HotClient(**_config)
-    return _client
+    try:
+        _thread.client
+    except AttributeError:
+        setattr(_thread, "client", HotClient(**_config))
+    return _thread.client
+
 
 def configure(config):
     global _config
     _config = config
 
+
 @contextlib.contextmanager
 def transaction():
-    global _client
-    client = _client
-    _client = client.pipeline()
+    """
+    Swaps out the current client with a pipeline instance,
+    so that each Redis method call inside the context will be
+    pipelined. Once the context is exited, we execute the pipeline.
+    """
+    client = default_client()
+    _thread.client = client.pipeline()
     yield
-    _client.execute()
-    _client = client
+    _thread.client.execute()
+    _thread.client = client
 
 
 ####################################################################
