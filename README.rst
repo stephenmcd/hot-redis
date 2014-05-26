@@ -119,6 +119,25 @@ object::
     >>> my_queue = Queue(client=client)
 
 
+Transactions
+============
+
+Basic support for thread-safe transactions are provided using the
+Redis ``MULTI`` command::
+
+    >>> from hot_redis import List, Queue, transaction
+    >>> my_list = List(key="foo")
+    >>> my_queue = Queue(key="bar")
+    >>> with transaction():
+    ...     for i in range(20):
+    ...         my_list.append(i)
+    ...         my_queue.put(i)
+
+In the above example, all of the ``append`` and ``put`` calls are
+batched together into a single transaction, that is executed once the
+``transaction()`` context is exited.
+
+
 Data Types
 ==========
 
