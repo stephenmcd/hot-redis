@@ -698,14 +698,13 @@ class BoundedSemaphore(Queue):
             self.put(1, block, timeout)
         except _Queue.Full:
             return False
-        self.acquired = True
         return True
 
     def release(self):
-        if not getattr(self, "acquired", False):
+        try:
+            self.get(block=False)
+        except _Queue.Empty:
             raise RuntimeError("Cannot release unacquired lock")
-        self.acquired = False
-        self.get()
 
     def __enter__(self):
         self.acquire()
