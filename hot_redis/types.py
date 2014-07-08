@@ -218,7 +218,10 @@ class List(Sequential):
         self.rpush(*other)
 
     def insert(self, i, item):
-        self.list_insert(i, item)
+        if i == 0:
+            self.lpush(item)
+        else:
+            self.list_insert(i, item)
 
     def pop(self, i=-1):
         if i == -1:
