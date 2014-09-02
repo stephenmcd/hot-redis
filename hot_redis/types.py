@@ -31,7 +31,7 @@ def value_right(self, other):
     """
     Returns the value of the type instance calling an to use in an
     operator method, namely when the method's instance is on the
-    left side of the expression.
+    right side of the expression.
     """
     return self if isinstance(other, self.__class__) else self.value
 
