@@ -2,7 +2,6 @@
 
 import collections
 import time
-import Queue
 import unittest
 import hot_redis
 
@@ -52,6 +51,9 @@ class ListTests(BaseTestCase):
         self.assertEquals(b + a, d)
 
     def test_mul(self):
+        import sys
+        if sys.version_info[0] == 3:
+            self.fail("This hangs on Python 3")
         a = ["wagwaan", "hot", "skull"]
         b = hot_redis.List(a)
         i = 9000
@@ -780,12 +782,12 @@ class QueueTests(BaseTestCase):
         self.assertIn(a, q)
         q.put(b)
         self.assertIn(b, q)
-        self.assertRaises(Queue.Full, lambda: q.put("popcaan", block=False))
+        self.assertRaises(hot_redis.queue.Full, lambda: q.put("popcaan", block=False))
         start = time.time()
         timeout = 2
         try:
             q.put("popcaan", timeout=timeout)
-        except Queue.Full:
+        except hot_redis.queue.Full:
             pass
         self.assertTrue(time.time() - start >= timeout)
 
@@ -799,12 +801,12 @@ class QueueTests(BaseTestCase):
         self.assertNotIn(a, q)
         self.assertEquals(b, q.get())
         self.assertNotIn(b, q)
-        self.assertRaises(Queue.Empty, lambda: q.get(block=False))
+        self.assertRaises(hot_redis.queue.Empty, lambda: q.get(block=False))
         start = time.time()
         timeout = 2
         try:
             q.get(timeout=timeout)
-        except Queue.Empty:
+        except hot_redis.queue.Empty:
             pass
         self.assertTrue(time.time() - start >= timeout)
 

@@ -6,4 +6,5 @@ syntax: glob
 build
 dist
 *.egg-info
+*.egg
 

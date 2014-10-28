@@ -1,9 +1,14 @@
 
 import collections
 import operator
-import Queue as _Queue
 import time
 import uuid
+
+try:
+    import queue
+except ImportError:
+    # Python 2.
+    import Queue as queue
 
 import redis
 
@@ -86,6 +91,12 @@ class Base(object):
         if initial:
             self.value = initial
 
+        # Temporarily raise an exception for Python 3, since it's not
+        # yet supported, but allow tests to still be run.
+        import sys
+        if int(sys.version_info[0]) == 3 and sys.argv[-1] != "test":
+            raise "Python 3 not yet supported"
+
     __eq__ = op_left(operator.eq)
     __lt__ = op_left(operator.lt)
     __le__ = op_left(operator.le)
@@ -140,7 +151,6 @@ class Numeric(Base):
     __add__       = op_left(operator.add)
     __sub__       = op_left(operator.sub)
     __mul__       = op_left(operator.mul)
-    __div__       = op_left(operator.div)
     __floordiv__  = op_left(operator.floordiv)
     __truediv__   = op_left(operator.truediv)
     __mod__       = op_left(operator.mod)
@@ -149,7 +159,6 @@ class Numeric(Base):
     __radd__      = op_right(operator.add)
     __rsub__      = op_right(operator.sub)
     __rmul__      = op_right(operator.mul)
-    __rdiv__      = op_right(operator.div)
     __rtruediv__  = op_right(operator.truediv)
     __rfloordiv__ = op_right(operator.floordiv)
     __rmod__      = op_right(operator.mod)
@@ -162,6 +171,14 @@ class Numeric(Base):
     __ifloordiv__ = inplace("number_floordiv")
     __imod__      = inplace("number_mod")
     __ipow__      = inplace("number_pow")
+
+
+try:
+    # Python 2.
+    Numeric.__div__  = op_left(operator.div)
+    Numeric.__rdiv__ = op_right(operator.div)
+except AttributeError:
+    pass
 
 
 ####################################################
@@ -610,7 +627,7 @@ class Queue(List):
                 if self.queue_put(item, self.maxsize):
                     break
                 if timeout is not None and time.time() - start >= timeout:
-                    raise _Queue.Full
+                    raise queue.Full
                 time.sleep(.1)
 
     def put_nowait(self, item):
@@ -624,7 +641,7 @@ class Queue(List):
         else:
             item = self.pop()
         if item is None:
-            raise _Queue.Empty
+            raise queue.Empty
         return item
 
     def get_nowait(self):
@@ -699,14 +716,14 @@ class BoundedSemaphore(Queue):
     def acquire(self, block=True, timeout=None):
         try:
             self.put(1, block, timeout)
-        except _Queue.Full:
+        except queue.Full:
             return False
         return True
 
     def release(self):
         try:
             self.get(block=False)
-        except _Queue.Empty:
+        except queue.Empty:
             raise RuntimeError("Cannot release unacquired lock")
 
     def __enter__(self):
