@@ -6,6 +6,10 @@ import unittest
 import hot_redis
 
 
+BASIC_ONLY = False  # We can manually toggle this if we're dealing with
+                    # some env that doesn't support Lua, like an old
+                    # version of Redis, or maybe testing a Redis clone.
+
 keys = []
 
 def base_wrapper(init):
@@ -15,9 +19,12 @@ def base_wrapper(init):
     return wrapper
 
 hot_redis.Base.__init__ = base_wrapper(hot_redis.Base.__init__)
+if BASIC_ONLY:
+    hot_redis.HotClient._create_lua_method = lambda *args, **kwargs: None
 
 
 class BaseTestCase(unittest.TestCase):
+
     def tearDown(self):
         client = hot_redis.default_client()
         while keys:
@@ -50,6 +57,7 @@ class ListTests(BaseTestCase):
         self.assertEquals(a + b, c)
         self.assertEquals(b + a, d)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_mul(self):
         import sys
         if sys.version_info[0] == 3:
@@ -83,6 +91,7 @@ class ListTests(BaseTestCase):
         self.assertEquals(a, b)
         # todo: slice
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_del(self):
         a = ["wagwaan", "hot", "skull"]
         b = hot_redis.List(a)
@@ -119,6 +128,7 @@ class ListTests(BaseTestCase):
         b.append(i)
         self.assertEquals(a, b)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_insert(self):
         a = ["wagwaan", "hot", "skull"]
         b = hot_redis.List(a)
@@ -127,6 +137,7 @@ class ListTests(BaseTestCase):
         b.insert(1, i)
         self.assertEquals(a, b)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_pop(self):
         a = ["wagwaan", "hot", "skull"] * 10
         b = hot_redis.List(a)
@@ -143,6 +154,7 @@ class ListTests(BaseTestCase):
         b.pop(20)
         self.assertEquals(a, b)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_reverse(self):
         a = ["wagwaan", "hot", "skull"]
         b = hot_redis.List(a)
@@ -252,6 +264,7 @@ class SetTests(BaseTestCase):
         self.assertEquals(e, d.intersection(b, hot_redis.Set(c)))
         self.assertEquals(e, d.intersection(hot_redis.Set(b), hot_redis.Set(c)))
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_intersection_update(self):
         a = set(["wagwaan", "hot", "skull"])
         b = set(["wagwaan", "flute", "don"])
@@ -288,6 +301,7 @@ class SetTests(BaseTestCase):
         self.assertEquals(e, d.difference(b, hot_redis.Set(c)))
         self.assertEquals(e, d.difference(hot_redis.Set(b), hot_redis.Set(c)))
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_difference_update(self):
         a = set(["wagwaan", "hot", "skull"])
         b = set(["wagwaan", "flute", "don"])
@@ -312,6 +326,7 @@ class SetTests(BaseTestCase):
         e.difference_update(hot_redis.Set(b), hot_redis.Set(c))
         self.assertEquals(e, d)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_symmetric_difference(self):
         a = set(["wagwaan", "hot", "skull"])
         b = set(["wagwaan", "flute", "don"])
@@ -321,6 +336,7 @@ class SetTests(BaseTestCase):
         self.assertEquals(d, c.symmetric_difference(hot_redis.Set(b)))
         self.assertEquals(d, a.symmetric_difference(hot_redis.Set(b)))
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_symmetric_difference_update(self):
         a = set(["wagwaan", "hot", "skull"])
         b = set(["wagwaan", "flute", "don"])
@@ -459,11 +475,11 @@ class DictTests(BaseTestCase):
         b = "popcaan"
         c = hot_redis.Dict.fromkeys(a)
         self.assertItemsEqual(a, c.keys())
-        ccc = c
         self.assertFalse(c["wagwaan"])
         c = hot_redis.Dict.fromkeys(a, b)
         self.assertEquals(c["wagwaan"], b)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_defaultdict(self):
         a = "wagwaan"
         b = "popcaan"
@@ -494,6 +510,7 @@ class StringTests(BaseTestCase):
         self.assertEquals(a + b, c)
         self.assertEquals(b + a, d)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_mul(self):
         a = "wagwaan"
         b = hot_redis.String(a)
@@ -506,6 +523,7 @@ class StringTests(BaseTestCase):
         a = "wagwaan"
         self.assertEquals(len(a), len(hot_redis.String(a)))
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_set(self):
         a = "wagwaan hotskull"
         b = "flute don"
@@ -526,6 +544,7 @@ class StringTests(BaseTestCase):
         self.assertEquals(a[:-5], b[:-5])
         self.assertRaises(IndexError, lambda: b[len(b)])
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_mutability(self):
         a = "wagwaan hotskull"
         b = "flute don"
@@ -575,6 +594,7 @@ class IntTests(BaseTestCase):
         self.assertEquals(a + b, c)
         self.assertEquals(b + a, d)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_mul(self):
         a = 420
         b = hot_redis.Int(a)
@@ -595,6 +615,7 @@ class IntTests(BaseTestCase):
         self.assertEquals(a - b, c)
         self.assertEquals(b - a, d)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_div(self):
         a = 420
         b = 9000
@@ -607,6 +628,7 @@ class IntTests(BaseTestCase):
         self.assertEquals(a / b, c)
         self.assertEquals(b / a, d)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_mod(self):
         a = 420
         b = 9000
@@ -619,6 +641,7 @@ class IntTests(BaseTestCase):
         self.assertEquals(a % b, c)
         self.assertEquals(b % a, d)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_pow(self):
         a = 4
         b = 20
@@ -631,7 +654,8 @@ class IntTests(BaseTestCase):
         self.assertEquals(a ** b, c)
         self.assertEquals(b ** a, d)
 
-    def test_add(self):
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
+    def test_and(self):
         a = 420
         b = 9000
         self.assertEquals(a & b, hot_redis.Int(a) & hot_redis.Int(b))
@@ -643,6 +667,7 @@ class IntTests(BaseTestCase):
         self.assertEquals(a & b, c)
         self.assertEquals(b & a, d)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_or(self):
         a = 420
         b = 9000
@@ -655,6 +680,7 @@ class IntTests(BaseTestCase):
         self.assertEquals(a | b, c)
         self.assertEquals(b | a, d)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_xor(self):
         a = 420
         b = 9000
@@ -667,6 +693,7 @@ class IntTests(BaseTestCase):
         self.assertEquals(a ^ b, c)
         self.assertEquals(b ^ a, d)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_lshift(self):
         a = 4
         b = 20
@@ -679,6 +706,7 @@ class IntTests(BaseTestCase):
         self.assertEquals(a << b, c)
         self.assertEquals(b << a, d)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_rshift(self):
         a = 9000
         b = 4
@@ -713,6 +741,7 @@ class FloatTests(BaseTestCase):
         self.assertAlmostEqual(a + b, c)
         self.assertAlmostEqual(b + a, d)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_mul(self):
         a = 420.666
         b = hot_redis.Float(a)
@@ -733,6 +762,7 @@ class FloatTests(BaseTestCase):
         self.assertAlmostEqual(a - b, c)
         self.assertAlmostEqual(b - a, d)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_div(self):
         a = 420.666
         b = 9000.666
@@ -745,6 +775,7 @@ class FloatTests(BaseTestCase):
         self.assertAlmostEqual(a / b, c)
         self.assertAlmostEqual(b / a, d)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_mod(self):
         a = 420.666
         b = 9000.666
@@ -757,6 +788,7 @@ class FloatTests(BaseTestCase):
         self.assertAlmostEqual(a % b, c)
         self.assertAlmostEqual(b % a, d)
 
+    @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_pow(self):
         a = 4.666
         b = 20.666
@@ -772,6 +804,7 @@ class FloatTests(BaseTestCase):
         self.assertAlmostEqual(b ** c, f)
 
 
+@unittest.skipIf(BASIC_ONLY, "Basic Only")
 class QueueTests(BaseTestCase):
 
     def test_put(self):
@@ -860,6 +893,7 @@ class QueueTests(BaseTestCase):
         self.assertEquals(q.qsize(), 0)
 
 
+@unittest.skipIf(BASIC_ONLY, "Basic Only")
 class CounterTests(BaseTestCase):
 
     def test_value(self):
@@ -1007,6 +1041,7 @@ class CounterTests(BaseTestCase):
         self.assertEqual(c.most_common(), b.most_common())
 
 
+@unittest.skipIf(BASIC_ONLY, "Basic Only")
 class TransactionTests(BaseTestCase):
 
     def test_transaction(self):
@@ -1019,6 +1054,7 @@ class TransactionTests(BaseTestCase):
         self.assertEquals(len(without_transaction), 2)
 
 
+@unittest.skipIf(BASIC_ONLY, "Basic Only")
 class LockTests(BaseTestCase):
 
     def test_semaphore(self):
