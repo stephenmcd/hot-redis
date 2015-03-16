@@ -30,6 +30,10 @@ class BaseTestCase(unittest.TestCase):
         while keys:
             client.delete(keys.pop())
 
+    # Removed in Python 3.
+    def assertItemsEqual(self, a, b):
+        self.assertEquals(list(a), list(b))
+
 
 class ListTests(BaseTestCase):
 
@@ -59,9 +63,6 @@ class ListTests(BaseTestCase):
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_mul(self):
-        import sys
-        if sys.version_info[0] == 3:
-            self.fail("This hangs on Python 3")
         a = ["wagwaan", "hot", "skull"]
         b = hot_redis.List(a)
         i = 9000
@@ -474,7 +475,7 @@ class DictTests(BaseTestCase):
         a = ["wagwaan", "hot", "skull"]
         b = "popcaan"
         c = hot_redis.Dict.fromkeys(a)
-        self.assertItemsEqual(a, c.keys())
+        self.assertItemsEqual(sorted(a), sorted(c.keys()))
         self.assertFalse(c["wagwaan"])
         c = hot_redis.Dict.fromkeys(a, b)
         self.assertEquals(c["wagwaan"], b)
@@ -1029,8 +1030,8 @@ class CounterTests(BaseTestCase):
         d = hot_redis.MultiSet(a)
         e = collections.Counter(**b)
         f = hot_redis.MultiSet(**b)
-        self.assertItemsEqual(c.elements(), d.elements())
-        self.assertItemsEqual(e.elements(), f.elements())
+        self.assertItemsEqual(sorted(c.elements()), sorted(d.elements()))
+        self.assertItemsEqual(sorted(e.elements()), sorted(f.elements()))
 
     def test_most_common(self):
         a = "wagwaan"

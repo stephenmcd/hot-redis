@@ -5,7 +5,9 @@ import time
 import uuid
 
 try:
+    # Python 3.
     import queue
+    from functools import reduce
 except ImportError:
     # Python 2.
     import Queue as queue
@@ -90,12 +92,6 @@ class Base(object):
         self.key = key or str(uuid.uuid4())
         if initial:
             self.value = initial
-
-        # Temporarily raise an exception for Python 3, since it's not
-        # yet supported, but allow tests to still be run.
-        import sys
-        if int(sys.version_info[0]) == 3 and sys.argv[-1] != "test":
-            raise "Python 3 not yet supported"
 
     __eq__ = op_left(operator.eq)
     __lt__ = op_left(operator.lt)
@@ -837,6 +833,15 @@ class MultiSet(Dict):
     __iand__ = inplace("intersection_update")
     __ior__  = inplace("union_update")
 
+    # Return 0 as a default, which allows bitwise ops to work correctly
+    # in Python 3, as its Counter type no longer supports working with
+    # missing values.
+    def __getitem__(self, name):
+        try:
+            return super(MultiSet, self).__getitem__(name)
+        except KeyError:
+            return 0
+
     def __delitem__(self, name):
         try:
             super(MultiSet, self).__delitem__(name)
@@ -858,7 +863,12 @@ class MultiSet(Dict):
     def _merge(self, iterable=None, **kwargs):
         if iterable:
             try:
-                items = iterable.iteritems()
+                try:
+                    # Python 2.
+                    items = iterable.iteritems()
+                except AttributeError:
+                    # Python 3.
+                    items = iterable.items()
             except AttributeError:
                 for k in iterable:
                     kwargs[k] = kwargs.get(k, 0) + 1

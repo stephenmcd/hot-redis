@@ -13,6 +13,7 @@ class HotClient(redis.Redis):
     """
 
     def __init__(self, *args, **kwargs):
+        kwargs.setdefault("decode_responses", True)
         super(HotClient, self).__init__(*args, **kwargs)
         requires_luabit = ("number_and", "number_or", "number_xor",
                            "number_lshift", "number_rshift")
