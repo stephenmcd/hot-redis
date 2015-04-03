@@ -1038,9 +1038,12 @@ class CounterTests(BaseTestCase):
         b = collections.Counter(a)
         c = hot_redis.MultiSet(a)
         d = 420
-        self.assertEqual(c.most_common(d), b.most_common(d))
-        self.assertEqual(c.most_common(), b.most_common())
-
+        check = b.most_common(d)
+        for i, e in enumerate(c.most_common(d)):
+            self.assertEqual(e[1], check[i][1])
+        check = b.most_common()
+        for i, e in enumerate(c.most_common()):
+            self.assertEqual(e[1], check[i][1])
 
 @unittest.skipIf(BASIC_ONLY, "Basic Only")
 class TransactionTests(BaseTestCase):
