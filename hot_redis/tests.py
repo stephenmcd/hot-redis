@@ -32,54 +32,54 @@ class BaseTestCase(unittest.TestCase):
 
     # Removed in Python 3.
     def assertItemsEqual(self, a, b):
-        self.assertEquals(sorted(a), sorted(b))
+        self.assertEqual(sorted(a), sorted(b))
 
 
 class ListTests(BaseTestCase):
 
     def test_value(self):
         a = ["wagwaan", "hot", "skull"]
-        self.assertEquals(hot_redis.List(a), a)
+        self.assertEqual(hot_redis.List(a), a)
 
     def test_empty(self):
-        self.assertEquals(hot_redis.List(), [])
+        self.assertEqual(hot_redis.List(), [])
 
     def test_iter(self):
         a = ["wagwaan", "hot", "skull"]
         for i, x in enumerate(hot_redis.List(a)):
-            self.assertEquals(x, a[i])
+            self.assertEqual(x, a[i])
 
     def test_add(self):
         a = ["wagwaan", "hot", "skull"]
         b = ["nba", "hang", "time"]
-        self.assertEquals(a + b, hot_redis.List(a) + hot_redis.List(b))
-        self.assertEquals(a + b, hot_redis.List(a) + b)
+        self.assertEqual(a + b, hot_redis.List(a) + hot_redis.List(b))
+        self.assertEqual(a + b, hot_redis.List(a) + b)
         c = hot_redis.List(a)
         d = hot_redis.List(b)
         d += c
         c += b
-        self.assertEquals(a + b, c)
-        self.assertEquals(b + a, d)
+        self.assertEqual(a + b, c)
+        self.assertEqual(b + a, d)
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_mul(self):
         a = ["wagwaan", "hot", "skull"]
         b = hot_redis.List(a)
         i = 9000
-        self.assertEquals(a * i, hot_redis.List(a) * i)
+        self.assertEqual(a * i, hot_redis.List(a) * i)
         b *= i
-        self.assertEquals(a * i, b)
+        self.assertEqual(a * i, b)
 
     def test_len(self):
         a = ["wagwaan", "hot", "skull"]
-        self.assertEquals(len(a), len(hot_redis.List(a)))
+        self.assertEqual(len(a), len(hot_redis.List(a)))
 
     def test_get(self):
         a = ["wagwaan", "hot", "skull"] * 10
         b = hot_redis.List(a)
-        self.assertEquals(a[4], b[4])
-        self.assertEquals(a[3:12], b[3:12])
-        self.assertEquals(a[:-5], b[:-5])
+        self.assertEqual(a[4], b[4])
+        self.assertEqual(a[3:12], b[3:12])
+        self.assertEqual(a[:-5], b[:-5])
         self.assertRaises(IndexError, lambda: b[len(b)])
 
     def test_set(self):
@@ -87,9 +87,9 @@ class ListTests(BaseTestCase):
         b = hot_redis.List(a)
         i = "popcaan"
         a[1] = i
-        self.assertNotEquals(a, b)
+        self.assertNotEqual(a, b)
         b[1] = i
-        self.assertEquals(a, b)
+        self.assertEqual(a, b)
         # todo: slice
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
@@ -97,15 +97,15 @@ class ListTests(BaseTestCase):
         a = ["wagwaan", "hot", "skull"]
         b = hot_redis.List(a)
         del a[1]
-        self.assertNotEquals(a, b)
+        self.assertNotEqual(a, b)
         del b[1]
-        self.assertEquals(a, b)
+        self.assertEqual(a, b)
         # todo: slice?
 
     def test_len(self):
         a = ["wagwaan", "hot", "skull"]
         b = hot_redis.List(a)
-        self.assertEquals(len(a), len(b))
+        self.assertEqual(len(a), len(b))
 
     def test_contains(self):
         a = ["wagwaan", "hot", "skull"]
@@ -119,7 +119,7 @@ class ListTests(BaseTestCase):
         c = hot_redis.List(a)
         a.extend(b)
         c.extend(b)
-        self.assertEquals(a, c)
+        self.assertEqual(a, c)
 
     def test_append(self):
         a = ["wagwaan", "hot", "skull"]
@@ -127,7 +127,7 @@ class ListTests(BaseTestCase):
         i = "popcaan"
         a.append(i)
         b.append(i)
-        self.assertEquals(a, b)
+        self.assertEqual(a, b)
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_insert(self):
@@ -136,7 +136,7 @@ class ListTests(BaseTestCase):
         i = "popcaan"
         a.insert(1, i)
         b.insert(1, i)
-        self.assertEquals(a, b)
+        self.assertEqual(a, b)
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_pop(self):
@@ -144,16 +144,16 @@ class ListTests(BaseTestCase):
         b = hot_redis.List(a)
         a.pop()
         b.pop()
-        self.assertEquals(a, b)
+        self.assertEqual(a, b)
         a.pop(0)
         b.pop(0)
-        self.assertEquals(a, b)
+        self.assertEqual(a, b)
         a.pop(-1)
         b.pop(-1)
-        self.assertEquals(a, b)
+        self.assertEqual(a, b)
         a.pop(20)
         b.pop(20)
-        self.assertEquals(a, b)
+        self.assertEqual(a, b)
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_reverse(self):
@@ -161,40 +161,40 @@ class ListTests(BaseTestCase):
         b = hot_redis.List(a)
         a.reverse()
         b.reverse()
-        self.assertEquals(a, b)
+        self.assertEqual(a, b)
 
     def test_index(self):
         a = ["wagwaan", "hot", "skull"] * 10
         b = hot_redis.List(a)
         c = "wagwaan"
-        self.assertEquals(a.index(c), b.index(c))
+        self.assertEqual(a.index(c), b.index(c))
         self.assertRaises(ValueError, lambda: b.index("popcaan"))
 
     def test_count(self):
         a = ["wagwaan", "hot", "skull"] * 10
         b = hot_redis.List(a)
-        self.assertEquals(a.count("wagwaan"), b.count("wagwaan"))
-        self.assertEquals(a.count("popcaan"), b.count("popcaan"))
+        self.assertEqual(a.count("wagwaan"), b.count("wagwaan"))
+        self.assertEqual(a.count("popcaan"), b.count("popcaan"))
 
     def test_sort(self):
         a = ["wagwaan", "hot", "skull"] * 10
         b = hot_redis.List(a)
         a.sort()
         b.sort()
-        self.assertEquals(a, b)
+        self.assertEqual(a, b)
         a.sort(reverse=True)
         b.sort(reverse=True)
-        self.assertEquals(a, b)
+        self.assertEqual(a, b)
 
 
 class SetTests(BaseTestCase):
 
     def test_value(self):
         a = set(["wagwaan", "hot", "skull"])
-        self.assertEquals(hot_redis.Set(a), a)
+        self.assertEqual(hot_redis.Set(a), a)
 
     def test_empty(self):
-        self.assertEquals(hot_redis.Set(), set())
+        self.assertEqual(hot_redis.Set(), set())
 
     def test_add(self):
         a = set(["wagwaan", "hot", "skull"])
@@ -202,7 +202,7 @@ class SetTests(BaseTestCase):
         i = "popcaan"
         a.add(i)
         b.add(i)
-        self.assertEquals(b, a)
+        self.assertEqual(b, a)
 
     def test_update(self):
         a = set(["wagwaan", "hot", "skull"])
@@ -211,26 +211,26 @@ class SetTests(BaseTestCase):
         d = hot_redis.Set(a)
         a.update(b, c)
         d.update(b, c)
-        self.assertEquals(d, a)
+        self.assertEqual(d, a)
 
     def test_pop(self):
         a = hot_redis.Set(["wagwaan", "hot", "skull"])
         i = len(a)
         b = a.pop()
-        self.assertEquals(len(a), i - 1)
+        self.assertEqual(len(a), i - 1)
         self.assertNotIn(b, a)
 
     def test_clear(self):
         a = hot_redis.Set(["wagwaan", "hot", "skull"])
         a.clear()
-        self.assertEquals(len(a), 0)
+        self.assertEqual(len(a), 0)
 
     def test_remove(self):
         a = hot_redis.Set(["wagwaan", "hot", "skull"])
         i = len(a)
         b = "wagwaan"
         a.remove(b)
-        self.assertEquals(len(a), i - 1)
+        self.assertEqual(len(a), i - 1)
         self.assertNotIn(b, a)
         self.assertRaises(KeyError, lambda: a.remove("popcaan"))
 
@@ -239,14 +239,14 @@ class SetTests(BaseTestCase):
         i = len(a)
         b = "wagwaan"
         a.discard(b)
-        self.assertEquals(len(a), i - 1)
+        self.assertEqual(len(a), i - 1)
         self.assertNotIn(b, a)
-        self.assertEquals(a.discard("popcaan"), None)
+        self.assertEqual(a.discard("popcaan"), None)
 
     def test_len(self):
         a = set(["wagwaan", "hot", "skull"])
         b = hot_redis.Set(a)
-        self.assertEquals(len(a), len(b))
+        self.assertEqual(len(a), len(b))
 
     def test_contains(self):
         a = hot_redis.Set(["wagwaan", "hot", "skull"])
@@ -259,11 +259,11 @@ class SetTests(BaseTestCase):
         c = set(["wagwaan", "worldstar", "hiphop"])
         d = hot_redis.Set(a)
         e = a.intersection(b, c)
-        self.assertEquals(a.intersection(b), d.intersection(b))
-        self.assertEquals(e, d.intersection(b, c))
-        self.assertEquals(e, d.intersection(hot_redis.Set(b), c))
-        self.assertEquals(e, d.intersection(b, hot_redis.Set(c)))
-        self.assertEquals(e, d.intersection(hot_redis.Set(b), hot_redis.Set(c)))
+        self.assertEqual(a.intersection(b), d.intersection(b))
+        self.assertEqual(e, d.intersection(b, c))
+        self.assertEqual(e, d.intersection(hot_redis.Set(b), c))
+        self.assertEqual(e, d.intersection(b, hot_redis.Set(c)))
+        self.assertEqual(e, d.intersection(hot_redis.Set(b), hot_redis.Set(c)))
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_intersection_update(self):
@@ -274,21 +274,21 @@ class SetTests(BaseTestCase):
         d.intersection_update(b)
         e = hot_redis.Set(a)
         e.intersection_update(b)
-        self.assertEquals(e, d)
+        self.assertEqual(e, d)
         d = a.copy()
         d.intersection_update(b, c)
         e = hot_redis.Set(a)
         e.intersection_update(b, c)
-        self.assertEquals(e, d)
+        self.assertEqual(e, d)
         e = hot_redis.Set(a)
         e.intersection_update(hot_redis.Set(b), c)
-        self.assertEquals(e, d)
+        self.assertEqual(e, d)
         e = hot_redis.Set(a)
         e.intersection_update(b, hot_redis.Set(c))
-        self.assertEquals(e, d)
+        self.assertEqual(e, d)
         e = hot_redis.Set(a)
         e.intersection_update(hot_redis.Set(b), hot_redis.Set(c))
-        self.assertEquals(e, d)
+        self.assertEqual(e, d)
 
     def test_difference(self):
         a = set(["wagwaan", "hot", "skull"])
@@ -296,11 +296,11 @@ class SetTests(BaseTestCase):
         c = set(["wagwaan", "worldstar", "hiphop"])
         d = hot_redis.Set(a)
         e = a.difference(b, c)
-        self.assertEquals(a.difference(b), d.difference(b))
-        self.assertEquals(e, d.difference(b, c))
-        self.assertEquals(e, d.difference(hot_redis.Set(b), c))
-        self.assertEquals(e, d.difference(b, hot_redis.Set(c)))
-        self.assertEquals(e, d.difference(hot_redis.Set(b), hot_redis.Set(c)))
+        self.assertEqual(a.difference(b), d.difference(b))
+        self.assertEqual(e, d.difference(b, c))
+        self.assertEqual(e, d.difference(hot_redis.Set(b), c))
+        self.assertEqual(e, d.difference(b, hot_redis.Set(c)))
+        self.assertEqual(e, d.difference(hot_redis.Set(b), hot_redis.Set(c)))
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_difference_update(self):
@@ -311,21 +311,21 @@ class SetTests(BaseTestCase):
         d.difference_update(b)
         e = hot_redis.Set(a)
         e.difference_update(b)
-        self.assertEquals(e, d)
+        self.assertEqual(e, d)
         d = a.copy()
         d.difference_update(b, c)
         e = hot_redis.Set(a)
         e.difference_update(b, c)
-        self.assertEquals(e, d)
+        self.assertEqual(e, d)
         e = hot_redis.Set(a)
         e.difference_update(hot_redis.Set(b), c)
-        self.assertEquals(e, d)
+        self.assertEqual(e, d)
         e = hot_redis.Set(a)
         e.difference_update(b, hot_redis.Set(c))
-        self.assertEquals(e, d)
+        self.assertEqual(e, d)
         e = hot_redis.Set(a)
         e.difference_update(hot_redis.Set(b), hot_redis.Set(c))
-        self.assertEquals(e, d)
+        self.assertEqual(e, d)
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_symmetric_difference(self):
@@ -333,9 +333,9 @@ class SetTests(BaseTestCase):
         b = set(["wagwaan", "flute", "don"])
         c = hot_redis.Set(a)
         d = a.symmetric_difference(b)
-        self.assertEquals(d, c.symmetric_difference(b))
-        self.assertEquals(d, c.symmetric_difference(hot_redis.Set(b)))
-        self.assertEquals(d, a.symmetric_difference(hot_redis.Set(b)))
+        self.assertEqual(d, c.symmetric_difference(b))
+        self.assertEqual(d, c.symmetric_difference(hot_redis.Set(b)))
+        self.assertEqual(d, a.symmetric_difference(hot_redis.Set(b)))
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_symmetric_difference_update(self):
@@ -345,10 +345,10 @@ class SetTests(BaseTestCase):
         c.difference_update(b)
         d = hot_redis.Set(a)
         d.difference_update(b)
-        self.assertEquals(d, c)
+        self.assertEqual(d, c)
         d = hot_redis.Set(a)
         d.difference_update(hot_redis.Set(b))
-        self.assertEquals(d, c)
+        self.assertEqual(d, c)
 
     def test_disjoint(self):
         a = set(["wagwaan", "hot", "skull"])
@@ -366,28 +366,28 @@ class SetTests(BaseTestCase):
         b = set(["nba", "hang", "time"])
         c = hot_redis.Set(a)
         d = hot_redis.Set(b)
-        self.assertEquals(a > b, c > d)
-        self.assertEquals(a < b, c < d)
-        self.assertEquals(a > b, c > b)
-        self.assertEquals(a < b, c < b)
-        self.assertEquals(a >= b, c >= d)
-        self.assertEquals(a <= b, c <= d)
-        self.assertEquals(a >= b, c >= b)
-        self.assertEquals(a <= b, c <= b)
-        self.assertEquals(a.issubset(b), c.issubset(d))
-        self.assertEquals(a.issuperset(b), c.issuperset(d))
-        self.assertEquals(a.issubset(b), c.issubset(b))
-        self.assertEquals(a.issuperset(b), c.issuperset(b))
+        self.assertEqual(a > b, c > d)
+        self.assertEqual(a < b, c < d)
+        self.assertEqual(a > b, c > b)
+        self.assertEqual(a < b, c < b)
+        self.assertEqual(a >= b, c >= d)
+        self.assertEqual(a <= b, c <= d)
+        self.assertEqual(a >= b, c >= b)
+        self.assertEqual(a <= b, c <= b)
+        self.assertEqual(a.issubset(b), c.issubset(d))
+        self.assertEqual(a.issuperset(b), c.issuperset(d))
+        self.assertEqual(a.issubset(b), c.issubset(b))
+        self.assertEqual(a.issuperset(b), c.issuperset(b))
 
 
 class DictTests(BaseTestCase):
 
     def test_value(self):
         a = {"wagwaan": "popcaan", "flute": "don"}
-        self.assertEquals(hot_redis.Dict(a), a)
+        self.assertEqual(hot_redis.Dict(a), a)
 
     def test_empty(self):
-        self.assertEquals(hot_redis.Dict(), {})
+        self.assertEqual(hot_redis.Dict(), {})
 
     def test_update(self):
         a = {"wagwaan": "popcaan", "flute": "don"}
@@ -395,7 +395,7 @@ class DictTests(BaseTestCase):
         c = hot_redis.Dict(a)
         a.update(b)
         c.update(b)
-        self.assertEquals(a, c)
+        self.assertEqual(a, c)
 
     def test_iter(self):
         a = {"wagwaan": "popcaan", "flute": "don"}
@@ -419,27 +419,27 @@ class DictTests(BaseTestCase):
         c = "nba"
         d = "hangtime"
         e = b.setdefault(c, d)
-        self.assertEquals(e, d)
-        self.assertEquals(b[c], d)
-        self.assertEquals(a.setdefault(c, d), e)
+        self.assertEqual(e, d)
+        self.assertEqual(b[c], d)
+        self.assertEqual(a.setdefault(c, d), e)
         e = b.setdefault(c, c)
-        self.assertEquals(e, d)
-        self.assertEquals(a.setdefault(c, c), e)
+        self.assertEqual(e, d)
+        self.assertEqual(a.setdefault(c, c), e)
 
     def test_get(self):
         a = {"wagwaan": "popcaan", "flute": "don"}
         b = hot_redis.Dict(a)
-        self.assertEquals(a["wagwaan"], b["wagwaan"])
-        self.assertEquals(a.get("wagwaan"), b.get("wagwaan"))
+        self.assertEqual(a["wagwaan"], b["wagwaan"])
+        self.assertEqual(a.get("wagwaan"), b.get("wagwaan"))
         self.assertRaises(KeyError, lambda: b["hotskull"])
-        self.assertEquals(a.get("hotskull"), b.get("hotskull"))
-        self.assertEquals(a.get("hotskull", "don"), b.get("hotskull", "don"))
-        self.assertNotEquals(a.get("hotskull", "don"), b.get("hotskull", "x"))
+        self.assertEqual(a.get("hotskull"), b.get("hotskull"))
+        self.assertEqual(a.get("hotskull", "don"), b.get("hotskull", "don"))
+        self.assertNotEqual(a.get("hotskull", "don"), b.get("hotskull", "x"))
 
     def test_set(self):
         a = hot_redis.Dict({"wagwaan": "popcaan", "flute": "don"})
         a["wagwaan"] = "hotskull"
-        self.assertEquals(a["wagwaan"], "hotskull")
+        self.assertEqual(a["wagwaan"], "hotskull")
 
     def test_del(self):
         a = hot_redis.Dict({"wagwaan": "popcaan", "flute": "don"})
@@ -452,7 +452,7 @@ class DictTests(BaseTestCase):
     def test_len(self):
         a = {"wagwaan": "popcaan", "flute": "don"}
         b = hot_redis.Dict(a)
-        self.assertEquals(len(a), len(b))
+        self.assertEqual(len(a), len(b))
 
     def test_contains(self):
         a = {"wagwaan": "popcaan", "flute": "don"}
@@ -463,13 +463,13 @@ class DictTests(BaseTestCase):
     def test_copy(self):
         a = hot_redis.Dict({"wagwaan": "popcaan", "flute": "don"})
         b = a.copy()
-        self.assertEquals(type(a), type(b))
-        self.assertNotEquals(a.key, b.key)
+        self.assertEqual(type(a), type(b))
+        self.assertNotEqual(a.key, b.key)
 
     def test_clear(self):
         a = hot_redis.Dict({"wagwaan": "popcaan", "flute": "don"})
         a.clear()
-        self.assertEquals(len(a), 0)
+        self.assertEqual(len(a), 0)
 
     def test_fromkeys(self):
         a = ["wagwaan", "hot", "skull"]
@@ -478,51 +478,51 @@ class DictTests(BaseTestCase):
         self.assertItemsEqual(sorted(a), sorted(c.keys()))
         self.assertFalse(c["wagwaan"])
         c = hot_redis.Dict.fromkeys(a, b)
-        self.assertEquals(c["wagwaan"], b)
+        self.assertEqual(c["wagwaan"], b)
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_defaultdict(self):
         a = "wagwaan"
         b = "popcaan"
         c = hot_redis.DefaultDict(lambda: b)
-        self.assertEquals(c[a], b)
+        self.assertEqual(c[a], b)
         c[b] += a
-        self.assertEquals(c[b], b + a)
+        self.assertEqual(c[b], b + a)
 
 
 class StringTests(BaseTestCase):
 
     def test_value(self):
         a = "wagwaan"
-        self.assertEquals(hot_redis.String(a), a)
+        self.assertEqual(hot_redis.String(a), a)
 
     def test_empty(self):
-        self.assertEquals(hot_redis.String(), "")
+        self.assertEqual(hot_redis.String(), "")
 
     def test_add(self):
         a = "wagwaan"
         b = "hotskull"
         c = hot_redis.String(a)
         d = hot_redis.String(b)
-        self.assertEquals(a + b, hot_redis.String(a) + hot_redis.String(b))
-        self.assertEquals(a + b, hot_redis.String(a) + b)
+        self.assertEqual(a + b, hot_redis.String(a) + hot_redis.String(b))
+        self.assertEqual(a + b, hot_redis.String(a) + b)
         d += c
         c += b
-        self.assertEquals(a + b, c)
-        self.assertEquals(b + a, d)
+        self.assertEqual(a + b, c)
+        self.assertEqual(b + a, d)
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_mul(self):
         a = "wagwaan"
         b = hot_redis.String(a)
         i = 9000
-        self.assertEquals(a * i, hot_redis.String(a) * i)
+        self.assertEqual(a * i, hot_redis.String(a) * i)
         b *= i
-        self.assertEquals(a * i, b)
+        self.assertEqual(a * i, b)
 
     def test_len(self):
         a = "wagwaan"
-        self.assertEquals(len(a), len(hot_redis.String(a)))
+        self.assertEqual(len(a), len(hot_redis.String(a)))
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_set(self):
@@ -535,14 +535,14 @@ class StringTests(BaseTestCase):
                 c[i:j] = list(b)
                 d[i:j] = b
                 c = "".join(c)
-                self.assertEquals(d, c)
+                self.assertEqual(d, c)
 
     def test_get(self):
         a = "wagwaan hotskull"
         b = hot_redis.String(a)
-        self.assertEquals(a[4], b[4])
-        self.assertEquals(a[3:12], b[3:12])
-        self.assertEquals(a[:-5], b[:-5])
+        self.assertEqual(a[4], b[4])
+        self.assertEqual(a[3:12], b[3:12])
+        self.assertEqual(a[:-5], b[:-5])
         self.assertRaises(IndexError, lambda: b[len(b)])
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
@@ -556,19 +556,19 @@ class StringTests(BaseTestCase):
         a += b
         c += b
         d += b
-        self.assertEquals(a, c)
-        self.assertEquals(a, d)
-        self.assertEquals(c.key, keyC)
-        self.assertNotEquals(d.key, keyD)
+        self.assertEqual(a, c)
+        self.assertEqual(a, d)
+        self.assertEqual(c.key, keyC)
+        self.assertNotEqual(d.key, keyD)
         keyD = d.key
         i = 9000
         a *= i
         c *= i
         d *= i
-        self.assertEquals(a, c)
-        self.assertEquals(a, d)
-        self.assertEquals(c.key, keyC)
-        self.assertNotEquals(d.key, keyD)
+        self.assertEqual(a, c)
+        self.assertEqual(a, d)
+        self.assertEqual(c.key, keyC)
+        self.assertNotEqual(d.key, keyD)
         def immutable_set():
             d[0] = b
         self.assertRaises(TypeError, immutable_set)
@@ -578,147 +578,147 @@ class IntTests(BaseTestCase):
 
     def test_value(self):
         a = 420
-        self.assertEquals(hot_redis.Int(a), a)
+        self.assertEqual(hot_redis.Int(a), a)
 
     def test_empty(self):
-        self.assertEquals(hot_redis.Int(), 0)
+        self.assertEqual(hot_redis.Int(), 0)
 
     def test_add(self):
         a = 420
         b = 9000
-        self.assertEquals(a + b, hot_redis.Int(a) + hot_redis.Int(b))
-        self.assertEquals(a + b, hot_redis.Int(a) + b)
+        self.assertEqual(a + b, hot_redis.Int(a) + hot_redis.Int(b))
+        self.assertEqual(a + b, hot_redis.Int(a) + b)
         c = hot_redis.Int(a)
         d = hot_redis.Int(b)
         d += c
         c += b
-        self.assertEquals(a + b, c)
-        self.assertEquals(b + a, d)
+        self.assertEqual(a + b, c)
+        self.assertEqual(b + a, d)
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_mul(self):
         a = 420
         b = hot_redis.Int(a)
         i = 9000
-        self.assertEquals(a * i, hot_redis.Int(a) * i)
+        self.assertEqual(a * i, hot_redis.Int(a) * i)
         b *= i
-        self.assertEquals(a * i, b)
+        self.assertEqual(a * i, b)
 
     def test_sub(self):
         a = 420
         b = 9000
-        self.assertEquals(a - b, hot_redis.Int(a) - hot_redis.Int(b))
-        self.assertEquals(a - b, hot_redis.Int(a) - b)
+        self.assertEqual(a - b, hot_redis.Int(a) - hot_redis.Int(b))
+        self.assertEqual(a - b, hot_redis.Int(a) - b)
         c = hot_redis.Int(a)
         d = hot_redis.Int(b)
         d -= c
         c -= b
-        self.assertEquals(a - b, c)
-        self.assertEquals(b - a, d)
+        self.assertEqual(a - b, c)
+        self.assertEqual(b - a, d)
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_div(self):
         a = 420
         b = 9000
-        self.assertEquals(a / b, hot_redis.Int(a) / hot_redis.Int(b))
-        self.assertEquals(a / b, hot_redis.Int(a) / b)
+        self.assertEqual(a / b, hot_redis.Int(a) / hot_redis.Int(b))
+        self.assertEqual(a / b, hot_redis.Int(a) / b)
         c = hot_redis.Int(a)
         d = hot_redis.Int(b)
         d /= c
         c /= b
-        self.assertEquals(a / b, c)
-        self.assertEquals(b / a, d)
+        self.assertEqual(a / b, c)
+        self.assertEqual(b / a, d)
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_mod(self):
         a = 420
         b = 9000
-        self.assertEquals(a % b, hot_redis.Int(a) % hot_redis.Int(b))
-        self.assertEquals(a % b, hot_redis.Int(a) % b)
+        self.assertEqual(a % b, hot_redis.Int(a) % hot_redis.Int(b))
+        self.assertEqual(a % b, hot_redis.Int(a) % b)
         c = hot_redis.Int(a)
         d = hot_redis.Int(b)
         d %= c
         c %= b
-        self.assertEquals(a % b, c)
-        self.assertEquals(b % a, d)
+        self.assertEqual(a % b, c)
+        self.assertEqual(b % a, d)
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_pow(self):
         a = 4
         b = 20
-        self.assertEquals(a ** b, hot_redis.Int(a) ** hot_redis.Int(b))
-        self.assertEquals(a ** b, hot_redis.Int(a) ** b)
+        self.assertEqual(a ** b, hot_redis.Int(a) ** hot_redis.Int(b))
+        self.assertEqual(a ** b, hot_redis.Int(a) ** b)
         c = hot_redis.Int(a)
         d = hot_redis.Int(b)
         d **= c
         c **= b
-        self.assertEquals(a ** b, c)
-        self.assertEquals(b ** a, d)
+        self.assertEqual(a ** b, c)
+        self.assertEqual(b ** a, d)
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_and(self):
         a = 420
         b = 9000
-        self.assertEquals(a & b, hot_redis.Int(a) & hot_redis.Int(b))
-        self.assertEquals(a & b, hot_redis.Int(a) & b)
+        self.assertEqual(a & b, hot_redis.Int(a) & hot_redis.Int(b))
+        self.assertEqual(a & b, hot_redis.Int(a) & b)
         c = hot_redis.Int(a)
         d = hot_redis.Int(b)
         d &= c
         c &= b
-        self.assertEquals(a & b, c)
-        self.assertEquals(b & a, d)
+        self.assertEqual(a & b, c)
+        self.assertEqual(b & a, d)
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_or(self):
         a = 420
         b = 9000
-        self.assertEquals(a | b, hot_redis.Int(a) | hot_redis.Int(b))
-        self.assertEquals(a | b, hot_redis.Int(a) | b)
+        self.assertEqual(a | b, hot_redis.Int(a) | hot_redis.Int(b))
+        self.assertEqual(a | b, hot_redis.Int(a) | b)
         c = hot_redis.Int(a)
         d = hot_redis.Int(b)
         d |= c
         c |= b
-        self.assertEquals(a | b, c)
-        self.assertEquals(b | a, d)
+        self.assertEqual(a | b, c)
+        self.assertEqual(b | a, d)
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_xor(self):
         a = 420
         b = 9000
-        self.assertEquals(a ^ b, hot_redis.Int(a) ^ hot_redis.Int(b))
-        self.assertEquals(a ^ b, hot_redis.Int(a) ^ b)
+        self.assertEqual(a ^ b, hot_redis.Int(a) ^ hot_redis.Int(b))
+        self.assertEqual(a ^ b, hot_redis.Int(a) ^ b)
         c = hot_redis.Int(a)
         d = hot_redis.Int(b)
         d ^= c
         c ^= b
-        self.assertEquals(a ^ b, c)
-        self.assertEquals(b ^ a, d)
+        self.assertEqual(a ^ b, c)
+        self.assertEqual(b ^ a, d)
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_lshift(self):
         a = 4
         b = 20
-        self.assertEquals(a << b, hot_redis.Int(a) << hot_redis.Int(b))
-        self.assertEquals(a << b, hot_redis.Int(a) << b)
+        self.assertEqual(a << b, hot_redis.Int(a) << hot_redis.Int(b))
+        self.assertEqual(a << b, hot_redis.Int(a) << b)
         c = hot_redis.Int(a)
         d = hot_redis.Int(b)
         d <<= c
         c <<= b
-        self.assertEquals(a << b, c)
-        self.assertEquals(b << a, d)
+        self.assertEqual(a << b, c)
+        self.assertEqual(b << a, d)
 
     @unittest.skipIf(BASIC_ONLY, "Basic Only")
     def test_rshift(self):
         a = 9000
         b = 4
-        self.assertEquals(a >> b, hot_redis.Int(a) >> hot_redis.Int(b))
-        self.assertEquals(a >> b, hot_redis.Int(a) >> b)
+        self.assertEqual(a >> b, hot_redis.Int(a) >> hot_redis.Int(b))
+        self.assertEqual(a >> b, hot_redis.Int(a) >> b)
         c = hot_redis.Int(a)
         d = hot_redis.Int(b)
         d >>= c
         c >>= b
-        self.assertEquals(a >> b, c)
-        self.assertEquals(b >> a, d)
+        self.assertEqual(a >> b, c)
+        self.assertEqual(b >> a, d)
 
 
 class FloatTests(BaseTestCase):
@@ -728,7 +728,7 @@ class FloatTests(BaseTestCase):
         self.assertAlmostEqual(hot_redis.Float(a), a)
 
     def test_empty(self):
-        self.assertEquals(hot_redis.Int(), .0)
+        self.assertEqual(hot_redis.Int(), .0)
 
     def test_add(self):
         a = 420.666
@@ -831,9 +831,9 @@ class QueueTests(BaseTestCase):
         q = hot_redis.Queue()
         q.put(a)
         q.put(b)
-        self.assertEquals(a, q.get())
+        self.assertEqual(a, q.get())
         self.assertNotIn(a, q)
-        self.assertEquals(b, q.get())
+        self.assertEqual(b, q.get())
         self.assertNotIn(b, q)
         self.assertRaises(hot_redis.queue.Empty, lambda: q.get(block=False))
         start = time.time()
@@ -864,13 +864,13 @@ class QueueTests(BaseTestCase):
 
     def test_size(self):
         q = hot_redis.Queue()
-        self.assertEquals(q.qsize(), 0)
+        self.assertEqual(q.qsize(), 0)
         q.put("wagwaan")
-        self.assertEquals(q.qsize(), 1)
+        self.assertEqual(q.qsize(), 1)
         q.put("hotskull")
-        self.assertEquals(q.qsize(), 2)
+        self.assertEqual(q.qsize(), 2)
         q.get()
-        self.assertEquals(q.qsize(), 1)
+        self.assertEqual(q.qsize(), 1)
 
     def test_lifo_queue(self):
         a = "wagwaan"
@@ -878,20 +878,20 @@ class QueueTests(BaseTestCase):
         q = hot_redis.LifoQueue()
         q.put(a)
         q.put(b)
-        self.assertEquals(b, q.get())
+        self.assertEqual(b, q.get())
         self.assertNotIn(b, q)
-        self.assertEquals(a, q.get())
+        self.assertEqual(a, q.get())
         self.assertNotIn(a, q)
 
     def test_set_queue(self):
         a = "wagwaan"
         q = hot_redis.SetQueue()
         q.put(a)
-        self.assertEquals(q.qsize(), 1)
+        self.assertEqual(q.qsize(), 1)
         q.put(a)
-        self.assertEquals(q.qsize(), 1)
-        self.assertEquals(q.get(), a)
-        self.assertEquals(q.qsize(), 0)
+        self.assertEqual(q.qsize(), 1)
+        self.assertEqual(q.get(), a)
+        self.assertEqual(q.qsize(), 0)
 
 
 @unittest.skipIf(BASIC_ONLY, "Basic Only")
@@ -904,11 +904,11 @@ class CounterTests(BaseTestCase):
         d = hot_redis.MultiSet(a)
         e = collections.Counter(**b)
         f = hot_redis.MultiSet(**b)
-        self.assertEquals(d, c)
-        self.assertEquals(f, e)
+        self.assertEqual(d, c)
+        self.assertEqual(f, e)
 
     def test_empty(self):
-        self.assertEquals(hot_redis.MultiSet(), collections.Counter())
+        self.assertEqual(hot_redis.MultiSet(), collections.Counter())
 
     def test_values(self):
         a = "wagwaan"
@@ -927,11 +927,11 @@ class CounterTests(BaseTestCase):
         d = hot_redis.MultiSet(a)
         e = collections.Counter(**b)
         f = hot_redis.MultiSet(**b)
-        self.assertEquals(c.get("a"), d.get("a"))
-        self.assertEquals(c.get("flute", "don"), d.get("flute", "don"))
-        self.assertEquals(e.get("hot"), f.get("hot"))
-        self.assertEquals(e.get("skull"), f.get("skull"))
-        self.assertEquals(e.get("flute", "don"), e.get("flute", "don"))
+        self.assertEqual(c.get("a"), d.get("a"))
+        self.assertEqual(c.get("flute", "don"), d.get("flute", "don"))
+        self.assertEqual(e.get("hot"), f.get("hot"))
+        self.assertEqual(e.get("skull"), f.get("skull"))
+        self.assertEqual(e.get("flute", "don"), e.get("flute", "don"))
 
     def test_del(self):
         a = hot_redis.MultiSet("wagwaan")
@@ -1051,8 +1051,8 @@ class TransactionTests(BaseTestCase):
                                              client=hot_redis.HotClient())
         with hot_redis.transaction():
             with_transaction.append(1)
-            self.assertEquals(len(without_transaction), 1)
-        self.assertEquals(len(without_transaction), 2)
+            self.assertEqual(len(without_transaction), 1)
+        self.assertEqual(len(without_transaction), 2)
 
 
 @unittest.skipIf(BASIC_ONLY, "Basic Only")
