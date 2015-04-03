@@ -32,7 +32,7 @@ class BaseTestCase(unittest.TestCase):
 
     # Removed in Python 3.
     def assertItemsEqual(self, a, b):
-        self.assertEquals(list(a), list(b))
+        self.assertEquals(sorted(a), sorted(b))
 
 
 class ListTests(BaseTestCase):
