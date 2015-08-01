@@ -8,8 +8,12 @@ import hot_redis
 
 
 # Env var specifying we're dealing with a server that doesn't support
-# Lua, like an old version of Redis, or some kind a Redis clone.
-BASIC_TEST = os.environ.get("HOT_REDIS_BASIC_TEST") == "1"
+# Lua, like an old version of Redis, or some kind of Redis clone.
+TEST_NO_LUA = os.environ.get("HOT_REDIS_TEST_NO_LUA") == "1"
+
+# Env var specifying the precision for assertAlmostEqual - we may want
+# to define this for alternate Lua implementations, like LuaJ.
+TEST_PRECISION = int(os.environ.get("HOT_REDIS_TEST_PRECISION", 0)) or None
 
 keys = []
 
@@ -20,7 +24,7 @@ def base_wrapper(init):
     return wrapper
 
 hot_redis.Base.__init__ = base_wrapper(hot_redis.Base.__init__)
-if BASIC_TEST:
+if TEST_NO_LUA:
     hot_redis.HotClient._create_lua_method = lambda *args, **kwargs: None
 
 
@@ -34,6 +38,11 @@ class BaseTestCase(unittest.TestCase):
     # Removed in Python 3.
     def assertItemsEqual(self, a, b):
         self.assertEqual(sorted(a), sorted(b))
+
+    # Configurable precision.
+    def assertAlmostEqual(self, a, b):
+        kwargs = {"places": TEST_PRECISION}
+        return super(BaseTestCase, self).assertAlmostEqual(a, b, **kwargs)
 
 
 class ListTests(BaseTestCase):
@@ -62,7 +71,7 @@ class ListTests(BaseTestCase):
         self.assertEqual(a + b, c)
         self.assertEqual(b + a, d)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_mul(self):
         a = ["wagwaan", "hot", "skull"]
         b = hot_redis.List(a)
@@ -93,7 +102,7 @@ class ListTests(BaseTestCase):
         self.assertEqual(a, b)
         # todo: slice
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_del(self):
         a = ["wagwaan", "hot", "skull"]
         b = hot_redis.List(a)
@@ -130,7 +139,7 @@ class ListTests(BaseTestCase):
         b.append(i)
         self.assertEqual(a, b)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_insert(self):
         a = ["wagwaan", "hot", "skull"]
         b = hot_redis.List(a)
@@ -139,7 +148,7 @@ class ListTests(BaseTestCase):
         b.insert(1, i)
         self.assertEqual(a, b)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_pop(self):
         a = ["wagwaan", "hot", "skull"] * 10
         b = hot_redis.List(a)
@@ -156,7 +165,7 @@ class ListTests(BaseTestCase):
         b.pop(20)
         self.assertEqual(a, b)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_reverse(self):
         a = ["wagwaan", "hot", "skull"]
         b = hot_redis.List(a)
@@ -266,7 +275,7 @@ class SetTests(BaseTestCase):
         self.assertEqual(e, d.intersection(b, hot_redis.Set(c)))
         self.assertEqual(e, d.intersection(hot_redis.Set(b), hot_redis.Set(c)))
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_intersection_update(self):
         a = set(["wagwaan", "hot", "skull"])
         b = set(["wagwaan", "flute", "don"])
@@ -303,7 +312,7 @@ class SetTests(BaseTestCase):
         self.assertEqual(e, d.difference(b, hot_redis.Set(c)))
         self.assertEqual(e, d.difference(hot_redis.Set(b), hot_redis.Set(c)))
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_difference_update(self):
         a = set(["wagwaan", "hot", "skull"])
         b = set(["wagwaan", "flute", "don"])
@@ -328,7 +337,7 @@ class SetTests(BaseTestCase):
         e.difference_update(hot_redis.Set(b), hot_redis.Set(c))
         self.assertEqual(e, d)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_symmetric_difference(self):
         a = set(["wagwaan", "hot", "skull"])
         b = set(["wagwaan", "flute", "don"])
@@ -338,7 +347,7 @@ class SetTests(BaseTestCase):
         self.assertEqual(d, c.symmetric_difference(hot_redis.Set(b)))
         self.assertEqual(d, a.symmetric_difference(hot_redis.Set(b)))
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_symmetric_difference_update(self):
         a = set(["wagwaan", "hot", "skull"])
         b = set(["wagwaan", "flute", "don"])
@@ -481,7 +490,7 @@ class DictTests(BaseTestCase):
         c = hot_redis.Dict.fromkeys(a, b)
         self.assertEqual(c["wagwaan"], b)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_defaultdict(self):
         a = "wagwaan"
         b = "popcaan"
@@ -512,7 +521,7 @@ class StringTests(BaseTestCase):
         self.assertEqual(a + b, c)
         self.assertEqual(b + a, d)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_mul(self):
         a = "wagwaan"
         b = hot_redis.String(a)
@@ -525,7 +534,7 @@ class StringTests(BaseTestCase):
         a = "wagwaan"
         self.assertEqual(len(a), len(hot_redis.String(a)))
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_set(self):
         a = "wagwaan hotskull"
         b = "flute don"
@@ -546,7 +555,7 @@ class StringTests(BaseTestCase):
         self.assertEqual(a[:-5], b[:-5])
         self.assertRaises(IndexError, lambda: b[len(b)])
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_mutability(self):
         a = "wagwaan hotskull"
         b = "flute don"
@@ -596,7 +605,7 @@ class IntTests(BaseTestCase):
         self.assertEqual(a + b, c)
         self.assertEqual(b + a, d)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_mul(self):
         a = 420
         b = hot_redis.Int(a)
@@ -617,7 +626,7 @@ class IntTests(BaseTestCase):
         self.assertEqual(a - b, c)
         self.assertEqual(b - a, d)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_div(self):
         a = 420
         b = 9000
@@ -630,7 +639,7 @@ class IntTests(BaseTestCase):
         self.assertEqual(a / b, c)
         self.assertEqual(b / a, d)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_mod(self):
         a = 420
         b = 9000
@@ -643,7 +652,7 @@ class IntTests(BaseTestCase):
         self.assertEqual(a % b, c)
         self.assertEqual(b % a, d)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_pow(self):
         a = 4
         b = 20
@@ -656,7 +665,7 @@ class IntTests(BaseTestCase):
         self.assertEqual(a ** b, c)
         self.assertEqual(b ** a, d)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_and(self):
         a = 420
         b = 9000
@@ -669,7 +678,7 @@ class IntTests(BaseTestCase):
         self.assertEqual(a & b, c)
         self.assertEqual(b & a, d)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_or(self):
         a = 420
         b = 9000
@@ -682,7 +691,7 @@ class IntTests(BaseTestCase):
         self.assertEqual(a | b, c)
         self.assertEqual(b | a, d)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_xor(self):
         a = 420
         b = 9000
@@ -695,7 +704,7 @@ class IntTests(BaseTestCase):
         self.assertEqual(a ^ b, c)
         self.assertEqual(b ^ a, d)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_lshift(self):
         a = 4
         b = 20
@@ -708,7 +717,7 @@ class IntTests(BaseTestCase):
         self.assertEqual(a << b, c)
         self.assertEqual(b << a, d)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_rshift(self):
         a = 9000
         b = 4
@@ -743,7 +752,7 @@ class FloatTests(BaseTestCase):
         self.assertAlmostEqual(a + b, c)
         self.assertAlmostEqual(b + a, d)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_mul(self):
         a = 420.666
         b = hot_redis.Float(a)
@@ -764,7 +773,7 @@ class FloatTests(BaseTestCase):
         self.assertAlmostEqual(a - b, c)
         self.assertAlmostEqual(b - a, d)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_div(self):
         a = 420.666
         b = 9000.666
@@ -777,7 +786,7 @@ class FloatTests(BaseTestCase):
         self.assertAlmostEqual(a / b, c)
         self.assertAlmostEqual(b / a, d)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_mod(self):
         a = 420.666
         b = 9000.666
@@ -790,7 +799,7 @@ class FloatTests(BaseTestCase):
         self.assertAlmostEqual(a % b, c)
         self.assertAlmostEqual(b % a, d)
 
-    @unittest.skipIf(BASIC_TEST, "Basic Only")
+    @unittest.skipIf(TEST_NO_LUA, "No Lua")
     def test_pow(self):
         a = 4.666
         b = 20.666
@@ -806,7 +815,7 @@ class FloatTests(BaseTestCase):
         self.assertAlmostEqual(b ** c, f)
 
 
-@unittest.skipIf(BASIC_TEST, "Basic Only")
+@unittest.skipIf(TEST_NO_LUA, "No Lua")
 class QueueTests(BaseTestCase):
 
     def test_put(self):
@@ -895,7 +904,7 @@ class QueueTests(BaseTestCase):
         self.assertEqual(q.qsize(), 0)
 
 
-@unittest.skipIf(BASIC_TEST, "Basic Only")
+@unittest.skipIf(TEST_NO_LUA, "No Lua")
 class CounterTests(BaseTestCase):
 
     def test_value(self):
@@ -1046,7 +1055,7 @@ class CounterTests(BaseTestCase):
         for i, e in enumerate(c.most_common()):
             self.assertEqual(e[1], check[i][1])
 
-@unittest.skipIf(BASIC_TEST, "Basic Only")
+@unittest.skipIf(TEST_NO_LUA, "No Lua")
 class TransactionTests(BaseTestCase):
 
     def test_transaction(self):
@@ -1059,7 +1068,7 @@ class TransactionTests(BaseTestCase):
         self.assertEqual(len(without_transaction), 2)
 
 
-@unittest.skipIf(BASIC_TEST, "Basic Only")
+@unittest.skipIf(TEST_NO_LUA, "No Lua")
 class LockTests(BaseTestCase):
 
     def test_semaphore(self):
