@@ -112,11 +112,6 @@ class ListTests(BaseTestCase):
         self.assertEqual(a, b)
         # todo: slice?
 
-    def test_len(self):
-        a = ["wagwaan", "hot", "skull"]
-        b = hot_redis.List(a)
-        self.assertEqual(len(a), len(b))
-
     def test_contains(self):
         a = ["wagwaan", "hot", "skull"]
         b = hot_redis.List(a)
