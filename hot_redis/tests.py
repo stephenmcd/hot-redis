@@ -75,7 +75,7 @@ class ListTests(BaseTestCase):
     def test_mul(self):
         a = ["wagwaan", "hot", "skull"]
         b = hot_redis.List(a)
-        i = 9000
+        i = 10
         self.assertEqual(a * i, hot_redis.List(a) * i)
         b *= i
         self.assertEqual(a * i, b)
