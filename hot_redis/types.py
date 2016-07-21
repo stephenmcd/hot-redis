@@ -627,7 +627,7 @@ class Queue(List):
                 time.sleep(.1)
 
     def put_nowait(self, item):
-        return self.put(item, block=False)
+        self.put(item, block=False)
 
     def get(self, block=True, timeout=None):
         if block:
@@ -641,7 +641,7 @@ class Queue(List):
         return item
 
     def get_nowait(self):
-        return self.get(item, block=False)
+        return self.get(block=False)
 
     def join(self):
         while not self.empty():

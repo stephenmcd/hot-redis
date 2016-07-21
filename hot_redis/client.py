@@ -69,7 +69,7 @@ def default_client():
     return _thread.client
 
 
-def configure(config):
+def configure(**config):
     global _config
     _config = config
 
