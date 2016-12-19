@@ -47,6 +47,12 @@ class BaseTestCase(unittest.TestCase):
 
 class ListTests(BaseTestCase):
 
+    def test_initial(self):
+        a = ["wagwaan", "hot", "skull"]
+        b = hot_redis.List(a)
+        c = hot_redis.List(a, key=b.key)
+        self.assertItemsEqual(a, c)
+
     def test_value(self):
         a = ["wagwaan", "hot", "skull"]
         self.assertEqual(hot_redis.List(a), a)

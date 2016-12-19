@@ -14,7 +14,7 @@ except ImportError:
 
 import redis
 
-from .client import default_client
+from .client import default_client, transaction
 
 
 ####################################################################
@@ -90,8 +90,15 @@ class Base(object):
     def __init__(self, initial=None, key=None, client=None):
         self.client = client  # Must be first.
         self.key = key or str(uuid.uuid4())
-        if initial:
-            self.value = initial
+        if initial is not None:
+            if key is None:
+                self.value = initial
+            else:
+                # Ensure previous value removed if key and initial
+                # value provided.
+                with transaction():
+                    self.delete()
+                    self.value = initial
 
     __eq__ = op_left(operator.eq)
     __lt__ = op_left(operator.lt)
