@@ -594,6 +594,14 @@ class IntTests(BaseTestCase):
     def test_empty(self):
         self.assertEqual(hot_redis.Int(), 0)
 
+    def test_set(self):
+        a = 420
+        b = hot_redis.Int()
+        b.value = a
+        self.assertEqual(b, a)
+        b.value = 0
+        self.assertEqual(b, 0)
+
     def test_add(self):
         a = 420
         b = 9000
@@ -740,6 +748,14 @@ class FloatTests(BaseTestCase):
 
     def test_empty(self):
         self.assertEqual(hot_redis.Int(), .0)
+
+    def test_set(self):
+        a = 420.666
+        b = hot_redis.Float()
+        b.value = a
+        self.assertAlmostEqual(b, a)
+        b.value = .0
+        self.assertAlmostEqual(b, .0)
 
     def test_add(self):
         a = 420.666

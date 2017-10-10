@@ -555,7 +555,7 @@ class Int(Numeric, Bitwise):
 
     @value.setter
     def value(self, value):
-        if value:
+        if value is not None:
             self.set(value)
 
     __iand__    = inplace("number_and")
@@ -576,7 +576,7 @@ class Float(Numeric):
 
     @value.setter
     def value(self, value):
-        if value:
+        if value is not None:
             self.set(value)
 
     __iadd__ = inplace("incrbyfloat")
