@@ -916,4 +916,4 @@ class MultiSet(Dict):
             values = values[:n]
         return values
 
-collections.MutableMapping.register(MultiSet)
+collections.abc.MutableMapping.register(MultiSet)
