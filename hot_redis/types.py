@@ -1,5 +1,4 @@
 
-import collections
 import operator
 import time
 import uuid
@@ -8,9 +7,12 @@ try:
     # Python 3.
     import queue
     from functools import reduce
+    from collections import Counter
+    from collections.abc import MutableMapping
 except ImportError:
     # Python 2.
     import Queue as queue
+    from collections import MutableMapping, Counter
 
 import redis
 
@@ -825,7 +827,7 @@ class MultiSet(Dict):
     def value(self):
         value = super(MultiSet, self).value
         kwargs = dict([(k, int(v)) for k, v in value.items()])
-        return collections.Counter(**kwargs)
+        return Counter(**kwargs)
 
     __add__  = op_left(operator.add)
     __sub__  = op_left(operator.sub)
@@ -916,4 +918,4 @@ class MultiSet(Dict):
             values = values[:n]
         return values
 
-collections.abc.MutableMapping.register(MultiSet)
+MutableMapping.register(MultiSet)
