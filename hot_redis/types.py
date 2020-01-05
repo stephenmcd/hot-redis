@@ -708,7 +708,7 @@ class BoundedSemaphore(Queue):
 
     BoundedSemaphore's ``value`` arg maps to Queue's ``maxsize``.
     BoundedSemaphore's acquire/release methods maps to Queue's put/get
-    methods repectively, providing blocking/timeout mechanics.
+    methods respectively, providing blocking/timeout mechanics.
     """
 
     maxsize = 1
