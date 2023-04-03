@@ -1,8 +1,14 @@
 
+import sys
 import collections
 import operator
 import time
 import uuid
+
+if sys.version_info.major == 3 and sys.version_info.minor >= 10:
+    from collections.abc import MutableMapping
+else:
+    from collections import MutableMapping
 
 try:
     # Python 3.
@@ -916,4 +922,5 @@ class MultiSet(Dict):
             values = values[:n]
         return values
 
-collections.MutableMapping.register(MultiSet)
+
+MutableMapping.register(MultiSet)
